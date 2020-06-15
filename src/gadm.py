@@ -6,6 +6,7 @@ import fiona
 import fiona.transform
 import geopandas as gpd
 import shapely.geometry
+import shapely.errors
 from shapely.prepared import prep
 
 from src.utils import Config
@@ -31,12 +32,7 @@ SCHEMA = {
 @click.argument("path_to_output")
 @click.argument("config", type=Config())
 def retrieve_administrative_borders(path_to_countries, max_layer_depths, path_to_output, config):
-    study_area = shapely.geometry.box(
-        minx=config["scope"]["bounds"]["x_min"],
-        maxx=config["scope"]["bounds"]["x_max"],
-        miny=config["scope"]["bounds"]["y_min"],
-        maxy=config["scope"]["bounds"]["y_max"]
-    )
+    study_area = _study_area(config)
     study_area = prep(study_area) # improves performance
     with fiona.open(path_to_countries[0], "r", layer=0) as first_country:
         src_crs = first_country.crs
@@ -76,6 +72,41 @@ def _country_features(path_to_file, layer_id, study_area):
             new_feature["properties"]["proper"] = True
             new_feature["geometry"] = _all_parts_in_study_area(feature, study_area)
             yield new_feature
+
+
+def _study_area(config):
+    """
+    Create a bounding box for the study area, and cut out holes for all defined
+    exclusion zones. For plotting purposes, exclusion zones and the bounding box are
+    defined in opposite orientations, see https://github.com/geopandas/geopandas/issues/951
+    """
+    if config["scope"].get("exclusion_zones", {}) and isinstance(config["scope"]["exclusion_zones"], dict):
+        holes = [
+            (
+                (exclusion_zone["x_max"], exclusion_zone["y_min"]),
+                (exclusion_zone["x_max"], exclusion_zone["y_max"]),
+                (exclusion_zone["x_min"], exclusion_zone["y_max"]),
+                (exclusion_zone["x_min"], exclusion_zone["y_min"])
+            )
+            for exclusion_zone in config["scope"]["exclusion_zones"].values()
+        ]
+    else:
+        holes = []
+
+    study_area = shapely.geometry.Polygon(
+        ((config["scope"]["bounds"]["x_min"], config["scope"]["bounds"]["y_min"]),
+         (config["scope"]["bounds"]["x_min"], config["scope"]["bounds"]["y_max"]),
+         (config["scope"]["bounds"]["x_max"], config["scope"]["bounds"]["y_max"]),
+         (config["scope"]["bounds"]["x_max"], config["scope"]["bounds"]["y_min"])),
+        holes=holes
+    )
+    if study_area.is_valid is False:
+        raise shapely.errors.TopologicalError(
+            "Invalid study area geometry. "
+            "Ensure that exclusion zones do not share a border with the study bounds."
+        )
+    else:
+        return study_area
 
 
 def _in_study_area(study_area):

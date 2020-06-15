@@ -7,7 +7,7 @@ import geopandas as gpd
 import pandas as pd
 import pycountry
 
-from gadm import SCHEMA, _to_multi_polygon, _test_id_uniqueness
+from gadm import SCHEMA, _to_multi_polygon, _test_id_uniqueness, _study_area
 from conversion import eu_country_code_to_iso3
 from utils import Config
 
@@ -112,15 +112,6 @@ def _in_layer(layer_id, feature):
         return True
     else:
         return False
-
-
-def _study_area(config):
-    return shapely.geometry.box(
-        minx=config["scope"]["bounds"]["x_min"],
-        maxx=config["scope"]["bounds"]["x_max"],
-        miny=config["scope"]["bounds"]["y_min"],
-        maxy=config["scope"]["bounds"]["y_max"]
-    )
 
 
 def _in_study_area(config, feature):

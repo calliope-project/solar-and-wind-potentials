@@ -7,8 +7,8 @@ import geopandas as gpd
 import pandas as pd
 import pycountry
 
-from gadm import SCHEMA, _test_id_uniqueness
-from nuts import _to_multi_polygon, _study_area
+from gadm import SCHEMA, _test_id_uniqueness, _study_area
+from nuts import _to_multi_polygon
 from conversion import eu_country_code_to_iso3
 from utils import Config
 
