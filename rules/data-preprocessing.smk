@@ -1,5 +1,6 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
+import pandas as pd
 
 URL_LOAD = "https://data.open-power-system-data.org/time_series/2018-06-30/time_series_60min_stacked.csv"
 URL_NUTS = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/NUTS_2013_01M_SH.zip"
@@ -7,29 +8,18 @@ URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-S
 URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
 URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
 URL_PROTECTED_AREAS = "https://www.protectedplanet.net/downloads/WDPA_Feb2019?type=shapefile"
-URL_CGIAR_TILE = "http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/"
-URL_GMTED_TILE = "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED/075darcsec/mea/"
+URL_SRTM_TILE = "http://viewfinderpanoramas.org/dem3/"
 URL_GADM = "https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/"
 URL_BATHYMETRIC = "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip"
 URL_POP = "http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_250/V1-0/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0.zip"
 
-
 RAW_SETTLEMENT_DATA = "data/esm-100m-2017/ESM_class{esm_class}_100m.tif"
 RAW_EEZ_DATA = "data/World_EEZ_v10_20180221/eez_v10.shp"
 
-RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
-RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
-
-SRTM_X_MIN = 34 # x coordinate of CGIAR tile raster
-SRTM_X_MAX = 44
-SRTM_Y_MIN = 1 # y coordinate of CGIAR tile raster
-SRTM_Y_MAX = 8
-GMTED_Y = ["50N", "70N"]
-GMTED_X = ["030W", "000E", "030E"]
 
 localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
     raw_nuts_units_zipped, raw_lau_units_zipped, raw_land_cover_zipped,
-    raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
+    raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped,
     raw_bathymetry_zipped, raw_bathymetry, raw_gadm_administrative_borders
 
 
@@ -145,70 +135,35 @@ rule raw_protected_areas:
 
 
 rule raw_srtm_elevation_tile_zipped:
-    message: "Download SRTM elevation data tile (x={wildcards.x}, y={wildcards.y}) from CGIAR."
+    message: "Download SRTM elevation data tile (tile={wildcards.tile}) from viewfinderpanoramas."
     output:
-        protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
+        protected("data/automatic/raw-srtm/srtm_{tile}.zip")
     shell:
         """
-        curl -sLo {output} '{URL_CGIAR_TILE}/srtm_{wildcards.x}_{wildcards.y}.zip'
+        curl -sLo {output} '{URL_SRTM_TILE}/{wildcards.tile}.zip'
         """
 
 
-rule raw_srtm_elevation_tile:
-    message: "Unzip SRTM elevation data tile (x={wildcards.x}, y={wildcards.y})."
-    input:
-        "data/automatic/raw-srtm/srtm_{x}_{y}.zip"
-    output:
-        temp("build/srtm_{x}_{y}.tif")
-    run: # using Python here, because "unzip" issues a warning sometimes causing snakemake to break
-        import zipfile
-        from pathlib import Path
-
-        file_to_extract = Path(input[0]).with_suffix(".tif").name
-        with zipfile.ZipFile(input[0], "r") as zipref:
-            zipref.extract(file_to_extract, path="build")
-
-
-rule raw_srtm_elevation_data:
+rule elevation_in_europe:
     message: "Merge all SRTM elevation data tiles."
     input:
-        ["build/srtm_{x:02d}_{y:02d}.tif".format(x=x, y=y)
-         for x in range(SRTM_X_MIN, SRTM_X_MAX + 1)
-         for y in range(SRTM_Y_MIN, SRTM_Y_MAX + 1)
-         if not (x is 34 and y in [3, 4, 5, 6])] # these tiles do not exist
+        ["data/automatic/raw-srtm/srtm_{}.zip".format(idx)
+         for idx, bounds in
+         pd.read_csv("data/viewfinderpanoramas.csv", index_col=0, header=0).iterrows()
+         if bounds['x_min'] >= config["scope"]["bounds"]["x_min"] and
+         bounds['x_max'] <= config["scope"]["bounds"]["x_max"] and
+         bounds['y_min'] >= config["scope"]["bounds"]["y_min"] and
+         bounds['y_max'] <= config["scope"]["bounds"]["y_max"]]
     output:
-        temp("build/raw-srtm-elevation-data.tif")
+        temp("build/elevation-europe.tif")
     conda: "../envs/default.yaml"
     shell:
-        "rio merge {input} {output} --overwrite"
-
-
-rule raw_gmted_elevation_tile:
-    message: "Download GMTED elevation data tile."
-    output:
-        protected("data/automatic/raw-gmted/raw-gmted-{y}-{x}.tif")
-    run:
-        url = "{base_url}/{x_inverse}/{y}{x}_20101117_gmted_mea075.tif".format(**{
-            "base_url": URL_GMTED_TILE,
-            "x": wildcards.x,
-            "y": wildcards.y,
-            "x_inverse": wildcards.x[-1] + wildcards.x[:-1]
-        })
-        shell("curl -sLo {output} '{url}'".format(**{"url": url, "output": output}))
-
-
-rule raw_gmted_elevation_data:
-    message: "Merge all GMTED elevation data tiles."
-    input:
-        ["data/automatic/raw-gmted/raw-gmted-{y}-{x}.tif".format(x=x, y=y)
-         for x in GMTED_X
-         for y in GMTED_Y
-         ]
-    output:
-        temp("build/raw-gmted-elevation-data.tif")
-    conda: "../envs/default.yaml"
-    shell:
-        "rio merge {input} {output} --overwrite"
+        """
+        find {input} -exec unzip -oj {{}} -d ./build/tmp_srtm_tiles \;
+        find ./build/tmp_srtm_tiles -name '*.zip' -exec unzip -oj {{}} -d ./build/tmp_srtm_tiles \;
+        find ./build/tmp_srtm_tiles -name '*.hgt' -type f -exec rio merge -o {output} {{}} +
+        rm -r ./build/tmp_srtm_tiles
+        """
 
 
 rule raw_bathymetry_zipped:
@@ -222,31 +177,6 @@ rule raw_bathymetry:
     input: rules.raw_bathymetry_zipped.output
     output: temp("build/ETOPO1_Bed_g_geotiff.tif")
     shell: "unzip {input} -d ./build/"
-
-
-rule elevation_in_europe:
-    message: "Merge SRTM and GMTED elevation data and warp/clip to Europe using {threads} threads."
-    input:
-        gmted = rules.raw_gmted_elevation_data.output,
-        srtm = rules.raw_srtm_elevation_data.output
-    output:
-        temp("build/elevation-europe.tif")
-    params:
-        srtm_bounds = "{x_min},{y_min},{x_max},60".format(**config["scope"]["bounds"]),
-        gmted_bounds = "{x_min},59.5,{x_max},{y_max}".format(**config["scope"]["bounds"])
-    threads: config["snakemake"]["max-threads"]
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        rio clip --bounds {params.srtm_bounds} {input.srtm} -o build/tmp-srtm.tif
-        rio clip --bounds {params.gmted_bounds} {input.gmted} -o build/tmp-gmted.tif
-        rio warp build/tmp-gmted.tif -o build/tmp-gmted2.tif -r {RESOLUTION_SLOPE} \
-        --resampling nearest --threads {threads}
-        rio merge build/tmp-srtm.tif build/tmp-gmted2.tif {output}
-        rm build/tmp-gmted.tif
-        rm build/tmp-gmted2.tif
-        rm build/tmp-srtm.tif
-        """
 
 
 rule land_cover_in_europe:
