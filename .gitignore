@@ -2,7 +2,9 @@
 build/
 
 # ignore raw data
-data/
+data/**/*
+!data/viewfinderpanoramas.csv
+!data/electricity-intensive-industry/*
 
 # ignore notebooks
 notebooks/
