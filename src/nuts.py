@@ -22,16 +22,14 @@ def nuts():
 
 @nuts.command()
 @click.argument("path_to_shapes")
-@click.argument("path_to_attributes")
 @click.argument("path_to_output")
-def merge(path_to_shapes, path_to_attributes, path_to_output):
-    """Merge NUTS shapes with attributes."""
+def to_multipolygon(path_to_shapes, path_to_output):
+    """Map NUTS shapes to multipolygon."""
     shapes = gpd.read_file(path_to_shapes)
     shapes.geometry = shapes.geometry.map(_to_multi_polygon)
-    attributes = gpd.read_file(path_to_attributes)
-    attributes = pd.DataFrame(attributes) # to be able to remove geo information
-    del attributes["geometry"]
-    shapes.merge(attributes, on="NUTS_ID", how="left").to_file(path_to_output, driver=OUTPUT_DRIVER)
+    shapes.drop('FID', axis=1).to_file(
+        path_to_output, driver=OUTPUT_DRIVER
+    )
 
 
 @nuts.command()
@@ -68,7 +66,7 @@ def _layer_features(nuts_file, config, layer_id):
         new_feature["properties"] = {}
         new_feature["properties"]["country_code"] = eu_country_code_to_iso3(feature["properties"]["NUTS_ID"][:2])
         new_feature["properties"]["id"] = feature["properties"]["NUTS_ID"]
-        new_feature["properties"]["name"] = feature["properties"]["NAME_LATN"]
+        new_feature["properties"]["name"] = feature["properties"]["NUTS_NAME"]
         new_feature["properties"]["type"] = "country" if layer_id == 0 else None
         new_feature["properties"]["proper"] = True
         new_feature["geometry"] = _all_parts_in_study_area_and_crs(feature, nuts_file.crs, config)
@@ -108,7 +106,7 @@ def _in_layer_and_in_study_area(layer_id, config):
 
 
 def _in_layer(layer_id, feature):
-    if feature["properties"]["STAT_LEVL_"] == layer_id:
+    if feature["properties"]["LEVL_CODE"] == layer_id:
         return True
     else:
         return False
