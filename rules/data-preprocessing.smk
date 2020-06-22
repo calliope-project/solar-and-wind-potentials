@@ -64,9 +64,11 @@ rule administrative_borders_gadm:
 rule raw_nuts_units_zipped:
     message: "Download units as zip."
     output:
-        protected("data/automatic/raw-nuts-units.zip")
+        protected("data/automatic/raw-nuts{}-units.zip".format(config["parameters"]["nuts-year"]))
+    params:
+        url = URL_NUTS.format(config["parameters"]["nuts-year"])
     shell:
-        "curl -sLo {output} '{URL_NUTS}'"
+        "curl -sLo {output} '{params.url}'"
 
 
 rule administrative_borders_nuts:

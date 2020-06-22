@@ -26,7 +26,7 @@ def nuts():
 def to_multipolygon(path_to_shapes, path_to_output):
     """Map NUTS shapes to multipolygon."""
     shapes = gpd.read_file(path_to_shapes)
-    shapes.geometry = shapes.geometry.map(_to_multi_polygon)
+    shapes.geometry = shapes.geometry.buffer(0).map(_to_multi_polygon)
     shapes.drop('FID', axis=1).to_file(
         path_to_output, driver=OUTPUT_DRIVER
     )
