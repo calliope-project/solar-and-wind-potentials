@@ -37,8 +37,9 @@ scope:
         - "Norway"
         - "Serbia"
         - "Switzerland"
+        - "Iceland"
     bounds:
-        x_min: -15.8 # in degrees east
+        x_min: -30 # in degrees east
         x_max: 37  # in degrees east
         y_min: 30  # in degrees north
         y_max: 75  # in degrees north
@@ -78,6 +79,7 @@ layers:
         Norway: nuts0
         Serbia: gadm0
         Switzerland: nuts0
+        Iceland: nuts0
     national:
         Austria: nuts0
         Belgium: nuts0
@@ -113,6 +115,7 @@ layers:
         Norway: nuts0
         Serbia: gadm0
         Switzerland: nuts0
+        Iceland: nuts0
     regional:
         # The link between NUTS and administrative units unfortunately is not obvious.
         # It's not documented anywhere -- at least I could not find any information.
@@ -152,6 +155,7 @@ layers:
         Norway: gadm1 # match 19
         Serbia: gadm1 # gadm1 25 regions; wiki 5 regions
         Switzerland: gadm1 # match 26
+        Iceland: gadm1
     municipal:
         Austria: lau2
         Belgium: lau2
@@ -187,6 +191,7 @@ layers:
         Norway: lau2
         Serbia: lau2
         Switzerland: lau2
+        Iceland: lau2
 parameters:
     maximum-installable-power-density: # this is not the yield, but the density of installed power
         pv-on-tilted-roofs: 160 # [W/m^2] from (Gagnon:2016, Klauser:2016), i.e. 16% efficiency
