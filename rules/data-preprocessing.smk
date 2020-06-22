@@ -2,7 +2,7 @@
 import pycountry
 
 URL_LOAD = "https://data.open-power-system-data.org/time_series/2018-06-30/time_series_60min_stacked.csv"
-URL_NUTS = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/NUTS_2013_01M_SH.zip"
+URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_01M_{}_4326.shp.zip"
 URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip"
 URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
 URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
@@ -77,12 +77,14 @@ rule administrative_borders_nuts:
     output:
         "build/administrative-borders-nuts.gpkg"
     shadow: "full"
+    params:
+        year = config['parameters']['nuts-year']
     conda: "../envs/default.yaml"
     shell:
         """
-        unzip {input.zip} -d ./build
-        {PYTHON} {input.src} merge ./build/NUTS_2013_01M_SH/data/NUTS_RG_01M_2013.shp \
-        ./build/NUTS_2013_01M_SH/data/NUTS_AT_2013.dbf ./build/raw-nuts.gpkg
+        unzip {input.zip} -d ./build/NUTS_RG_01M_{params.year}_4326/
+        {PYTHON} {input.src} to_multipolygon \
+        ./build/NUTS_RG_01M_{params.year}_4326 ./build/raw-nuts.gpkg
         {PYTHON} {input.src} normalise ./build/raw-nuts.gpkg {output} {CONFIG_FILE}
         """
 

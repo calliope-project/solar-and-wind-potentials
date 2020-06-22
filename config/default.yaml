@@ -211,6 +211,7 @@ parameters:
     max-depth-offshore: -50
     max-building-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2
     max-urban-green-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2. Removes e.g. Berlin's Tempelhofer Feld.
+    nuts-year: 2010  # Choice of NUTS data to use from [2006, 2010, 2013, 2016]
 scenarios:
     technical-potential:
         use-protected-areas: True
