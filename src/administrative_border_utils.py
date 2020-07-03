@@ -96,9 +96,6 @@ def _study_area(config):
         holes=holes
     )
     if study_area.is_valid is False:
-        raise shapely.errors.TopologicalError(
-            "Invalid study area geometry. "
-            "Ensure that exclusion zones do not share a border with the study bounds."
-        )
-    else:
-        return study_area
+        study_area = study_area.buffer(0)
+
+    return study_area
