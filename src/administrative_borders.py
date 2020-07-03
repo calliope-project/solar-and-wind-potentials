@@ -67,7 +67,7 @@ def _update_features(gdf, src):
             lambda x: pycountry.countries.lookup(x).name
         )
 
-        gdf["level"] = 'nuts' + gdf.LEVL_CODE
+        gdf["level"] = 'nuts' + gdf.LEVL_CODE.astype(str)
 
     elif src == 'gadm':
         gdf["level"] = gdf.source_ds_lyr.str.rsplit('_', 1, expand=True)[1].astype(int)
@@ -81,7 +81,7 @@ def _update_features(gdf, src):
             else:
                 gdf.loc[lvl_mask, "type"] = "country"
         gdf["proper"] = True
-        gdf["level"] = 'gadm' + gdf.level
+        gdf["level"] = 'gadm' + gdf.level.astype(str)
 
     elif src == 'lau':
         gdf["CNTR_CODE"] = gdf.COMM_ID.str[:2].apply(eu_country_code_to_iso3)
