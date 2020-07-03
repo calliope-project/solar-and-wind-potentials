@@ -46,19 +46,31 @@ rule raw_gadm_administrative_borders:
     shell: "unzip -o {input} -d data/automatic/raw-gadm"
 
 
-rule administrative_borders_gadm:
-    message: "Merge administrative borders of all countries up to layer {params.max_layer_depth}."
+rule merge_gadm_administrative_borders:
+    message: "Merge gadm administrative borders of all countries."
     input:
-        "src/gadm.py",
         ["data/automatic/raw-gadm/gadm36_{}.gpkg".format(country_code)
             for country_code in [pycountry.countries.lookup(country).alpha_3
                                  for country in config['scope']['countries']]
          ]
-    params: max_layer_depth = 3
+    output: temp("data/automatic/raw-gadm/gadm36.gpkg")
+    params: crs = config["crs"]
+    conda: '../envs/default.yaml'
+    shell:
+        """
+        ogrmerge.py -o {output} -f gpkg -src_layer_field_content "{{LAYER_NAME}}" -t_srs {params.crs} -single {input}
+        """
+
+
+rule administrative_borders_gadm:
+    message: "Normalise GADM administrative borders of all countries."
+    input:
+        "src/gadm.py",
+        "data/automatic/raw-gadm/gadm36.gpkg"
     output: "build/administrative-borders-gadm.gpkg"
     conda: "../envs/default.yaml"
     shell:
-        PYTHON + " {input} {params.max_layer_depth} {output} {CONFIG_FILE}"
+        PYTHON + " {input} {output} {CONFIG_FILE}"
 
 
 rule raw_nuts_units_zipped:
@@ -80,10 +92,8 @@ rule administrative_borders_nuts:
     conda: "../envs/default.yaml"
     shell:
         """
-        unzip {input.zip} -d ./build
-        {PYTHON} {input.src} merge ./build/NUTS_2013_01M_SH/data/NUTS_RG_01M_2013.shp \
-        ./build/NUTS_2013_01M_SH/data/NUTS_AT_2013.dbf ./build/raw-nuts.gpkg
-        {PYTHON} {input.src} normalise ./build/raw-nuts.gpkg {output} {CONFIG_FILE}
+        unzip {input.zip} -d ./build/NUTS_RG_01M_{params.year}_4326/
+        {PYTHON} {input.src} ./build/NUTS_RG_01M_{params.year}_4326 {output} {CONFIG_FILE}
         """
 
 
