@@ -4,7 +4,7 @@ import geopandas as gpd
 import pandas as pd
 import pycountry
 
-import administrative_border_utils
+from administrative_borders import _to_multi_polygon
 from conversion import eu_country_code_to_iso3
 from utils import Config
 
@@ -24,7 +24,7 @@ def lau():
 def merge(path_to_shapes, path_to_attributes, path_to_output):
     """Merge LAU shapes with attributes."""
     shapes = gpd.read_file(path_to_shapes)
-    shapes.geometry = shapes.geometry.map(administrative_border_utils._to_multi_polygon)
+    shapes.geometry = shapes.geometry.map(_to_multi_polygon)
     attributes = gpd.read_file(path_to_attributes)
     attributes = pd.DataFrame(attributes) # to be able to remove the geo information
     del attributes["geometry"]
@@ -61,35 +61,6 @@ def degurba(path_to_lau, path_to_degurba, path_to_output):
         "COMM_ID": "id",
         "DGURBA_CLA": "urbanisation_class"
     })[["id", "urbanisation_class"]].to_csv(path_to_output, header=True, index=False)
-
-
-@lau.command()
-@click.argument("path_to_lau")
-@click.argument("path_to_output")
-@click.argument("config", type=Config())
-def normalise(path_to_lau, path_to_output, config):
-    """Normalises raw LAU2 data."""
-
-    gdf = gpd.read_file(path_to_lau)
-    gdf = gdf.to_crs(config["crs"])
-    gdf.geometry = gdf.geometry.buffer(0).map(administrative_border_utils._to_multi_polygon)
-    gdf = _update_features(gdf)
-    gdf = administrative_border_utils.drop_countries(gdf, config)
-    gdf = administrative_border_utils.drop_geoms(gdf, config)
-
-    administrative_border_utils.to_file(gdf, path_to_output, OUTPUT_DRIVER)
-
-
-def _update_features(gdf):
-    gdf["CNTR_CODE"] = gdf.COMM_ID.str[:2].apply(eu_country_code_to_iso3)
-    gdf = gdf.rename(
-        columns={"COMM_ID": "id", "NAME_LATN": "name", "CNTR_CODE": "country_code"}
-    )
-    gdf["type"] = "commune"
-    gdf["proper"] = gdf["TRUE_COMM_"] == "T"
-    gdf["level"] = "lau2"
-
-    return gdf
 
 
 if __name__ == "__main__":
