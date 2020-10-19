@@ -197,43 +197,6 @@ rule local_built_up_area:
         PYTHON_SCRIPT
 
 
-rule population:
-    message: "Allocate population to units of layer {wildcards.layer}."
-    input:
-        units = rules.units.output,
-        population = rules.population_in_europe.output,
-        src_geojson = "src/geojson_to_csv.py",
-        src_population = "src/population.py",
-        land_cover = rules.local_land_cover.output
-    output:
-        "build/{layer}/population.csv"
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        crs=$(rio info --crs {input.population})
-        fio cat --dst_crs "$crs" {input.units} | \
-        rio zonalstats -r {input.population} --prefix 'population_' --stats sum | \
-        {PYTHON} {input.src_geojson} -a id -a population_sum -a proper | \
-        {PYTHON} {input.src_population} {input.units} {input.land_cover} > \
-        {output}
-        """
-
-
-rule demand:
-    message: "Allocate electricity demand to units of layer {wildcards.layer}."
-    input:
-        "src/spatial_demand.py",
-        rules.electricity_demand_national.output,
-        rules.industry.output,
-        rules.units.output,
-        rules.population.output
-    output:
-        "build/{layer}/demand.csv"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT
-
-
 rule eez_eligibility:
     message:
         "Allocate eligible land to exclusive economic zones using {threads} threads."
@@ -282,26 +245,6 @@ rule potentials:
         PYTHON_SCRIPT + " {wildcards.scenario} {CONFIG_FILE}"
 
 
-rule potentials_polished:
-    message: "Polish potential data for publication."
-    input:
-        potentials = rules.potentials.output[0],
-        demand = rules.demand.output[0]
-    output: "build/{layer}/{scenario}/potentials-polished.csv"
-    run:
-        import pandas as pd
-
-        potentials = pd.read_csv(input.potentials, index_col=0)
-        demand = pd.read_csv(input.demand, index_col=0)
-        potentials["Demand [TWh/yr]"] = demand["demand_twh_per_year"]
-        potentials.rename(columns={
-            "rooftop_pv_twh_per_year": "Roof mounted PV [TWh/yr]",
-            "open_field_pv_twh_per_year": "Open field PV [TWh/yr]",
-            "onshore_wind_twh_per_year": "Onshore wind [TWh/yr]",
-            "offshore_wind_twh_per_year": "Offshore wind [TWh/yr]"
-        }).to_csv(output[0], index=True, header=True, float_format="%.1f")
-
-
 rule areas:
     message:
         "Determine eligible areas for layer {wildcards.layer} in scenario {wildcards.scenario}."
@@ -340,76 +283,3 @@ rule capacities:
     shell:
         PYTHON_SCRIPT + " {wildcards.scenario} {CONFIG_FILE}"
 
-
-rule normed_potentials:
-    message:
-        "Determine potentials relative to demand for layer {wildcards.layer} "
-        "in scenario {wildcards.scenario}."
-    input:
-        "src/potentials_normed.py",
-        rules.demand.output,
-        rules.potentials.output
-    output:
-        "build/{layer}/{scenario}/normed-potentials.csv"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT
-
-
-rule footprint:
-    message: "Determine the land footprint of the renewable potential for layer {wildcards.layer} "
-             "in scenario {wildcards.scenario}."
-    input:
-        "src/footprint.py",
-        rules.category_of_technical_eligibility.output,
-        rules.area_of_technical_eligibility.output,
-        rules.electricity_yield_of_technical_eligibility.output,
-        rules.land_cover_in_europe.output,
-        rules.protected_areas_in_europe.output,
-        rules.units.output
-    output:
-        "build/{layer}/{scenario}/footprint.csv"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT + " {wildcards.scenario} {CONFIG_FILE}"
-
-
-rule necessary_land:
-    message: "Determine the necessary potentials to become autarkic of layer {wildcards.layer} "
-             "in scenario {wildcards.scenario} given rooftop PV share {wildcards.pvshare}%."
-    input:
-        "src/necessary_land.py",
-        rules.demand.output,
-        rules.potentials.output,
-        rules.footprint.output,
-        rules.local_built_up_area.output,
-        rules.units.output
-    output:
-        "build/{layer}/{scenario}/necessary-land-when-pv-{pvshare}%.csv"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT + " {wildcards.pvshare}"
-
-
-rule scenario_results:
-    message: "Merge all results of scenario {wildcards.scenario} for layer {wildcards.layer}."
-    input:
-        units = rules.units.output,
-        demand = rules.demand.output,
-        population = rules.population.output,
-        constrained_potentials = rules.potentials.output,
-        normed_potentials = rules.normed_potentials.output
-    output:
-        "build/{layer}/{scenario}/merged-results.gpkg"
-    run:
-        import pandas as pd
-        import geopandas as gpd
-
-        gpd.read_file(input.units[0]).merge(
-            pd.concat(
-                [pd.read_csv(path, index_col="id") for path in input[1:]],
-                axis=1
-            ),
-            left_on="id",
-            right_index=True
-        ).to_file(output[0], driver="GPKG")

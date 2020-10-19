@@ -1,12 +1,16 @@
-# Possibility for renewable electricity autarky in Europe
+# Potentials of solar and wind power
 
-Is your European region able to provide itself with 100% renewable electricity?
+This Snakemake workflow allows to estimate potentials of solar and wind power. We applied it in a former publication in which we estimated potentials for Europe as a whole, as well as all countries, sub-national regions, and municipalities in Europe (see below).
 
-This repository contains the entire research project, including code and report. The philosophy behind this repository is that no intermediary results are included, but all results are computed from raw data and code.
+However, it can be used to generate potentials for different areas by modifying the configuration files (and likely some of the rules as well). If you want to use it for different areas, consider the workflow as a starting point for your own analysis, not as a generic library that will work out of the box.
 
 [![article DOI](https://img.shields.io/badge/article-10.1016%2Fj.esr.2019.100388-blue)](https://doi.org/10.1016/j.esr.2019.100388)
-[![data DOI](https://img.shields.io/badge/data-10.5281%2Fzenodo.3244985-blue)](https://doi.org/10.5281/zenodo.3244985)
-[![code DOI](https://img.shields.io/badge/code-10.5281%2Fzenodo.3246303-blue)](https://doi.org/10.5281/zenodo.3246303)
+
+## Documentation and citation
+
+The approach is described in the following publication. If you use data or the method, please cite this publication.
+
+> Tröndle, T., Pfenninger, S., Lilliestam, J., 2019. Home-made or imported: on the possibility for renewable electricity autarky on all scales in Europe. Energy Strategy Reviews 26. https://doi.org/10.1016/j.esr.2019.100388
 
 ## Getting ready
 
@@ -34,9 +38,9 @@ Whenever possible, data is downloaded automatically. As this is not always possi
 
 ## Run the analysis
 
-    snakemake --use-conda paper
+    snakemake --use-conda
 
-This will run all analysis steps to reproduce results and eventually build the paper.
+This will run all analysis steps to estimate potentials.
 
 You can also run certain parts only by using other `snakemake` rules; to get a list of all rules run `snakemake --list`.
 
@@ -68,7 +72,6 @@ At the moment, there is one manual step involved: running renewables.ninja simul
 
 ## Repo structure
 
-* `report`: contains all files necessary to build the paper; plots and result files are not in here but generated automatically
 * `src`: contains the Python source code
 * `tests`: contains the test code
 * `config`: configurations used in the study
@@ -76,10 +79,6 @@ At the moment, there is one manual step involved: running renewables.ninja simul
 * `data`: place for raw data, whether retrieved manually and automatically
 * `build`: will contain all results (does not exist initially)
 
-## Citation
-
-If you use this code or data in an academic publication, please see `CITATION.md`.
-
 ## License
 
-The code in this repo is MIT licensed, see `./LICENSE.md`. This excludes the KlinicSlab font family (all files in `./report/fonts/`) which is copyright Lost Type.
+The code in this repo is MIT licensed, see `./LICENSE.md`.

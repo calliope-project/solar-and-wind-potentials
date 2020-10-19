@@ -17,7 +17,6 @@ URL_POP = "http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_
 
 RAW_SETTLEMENT_DATA = "data/esm-100m-2017/ESM_class{esm_class}_100m.tif"
 RAW_EEZ_DATA = "data/World_EEZ_v10_20180221/eez_v10.shp"
-RAW_INDUSTRY_DATA = "data/electricity-intensive-industry/energy-intensive-industries.xlsx"
 
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
@@ -29,31 +28,10 @@ SRTM_Y_MAX = 8
 GMTED_Y = ["50N", "70N"]
 GMTED_X = ["030W", "000E", "030E"]
 
-localrules: raw_load, raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
-    raw_nuts_units_zipped, raw_lau_units_zipped, raw_urbanisation_zipped, raw_land_cover_zipped,
+localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
+    raw_nuts_units_zipped, raw_lau_units_zipped, raw_land_cover_zipped,
     raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
-    raw_bathymetry_zipped, raw_bathymetry, raw_population_zipped, raw_population,
-    raw_gadm_administrative_borders
-
-
-rule raw_load:
-    message: "Download raw load."
-    output:
-        protected("data/automatic/raw-load-data.csv")
-    shell:
-        "curl -sLo {output} '{URL_LOAD}'"
-
-
-rule electricity_demand_national:
-    message: "Determine yearly demand per country."
-    input:
-        "src/process_load.py",
-        rules.raw_load.output
-    output:
-        "build/electricity-demand-national.csv"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT_WITH_CONFIG
+    raw_bathymetry_zipped, raw_bathymetry, raw_gadm_administrative_borders
 
 
 rule raw_gadm_administrative_borders_zipped:
@@ -134,34 +112,6 @@ rule administrative_borders_lau:
         ./build/COMM_01M_2013_SH/data/COMM_AT_2013.dbf ./build/raw-lau.gpkg
         {PYTHON} {input.src} identify ./build/raw-lau.gpkg ./build/raw-lau-identified.gpkg
         {PYTHON} {input.src} normalise ./build/raw-lau-identified.gpkg {output} {CONFIG_FILE}
-        """
-
-
-rule raw_urbanisation_zipped:
-    message: "Download DEGURBA units as zip."
-    output:
-        protected("data/automatic/raw-degurba-units.zip")
-    shell:
-        "curl -sLo {output} '{URL_DEGURBA}'"
-
-
-rule lau2_urbanisation_degree:
-    message: "Urbanisation degrees on LAU2 level."
-    input:
-        src = "src/lau.py",
-        lau2 = rules.raw_lau_units_zipped.output,
-        degurba = rules.raw_urbanisation_zipped.output
-    output:
-        "build/administrative-borders-lau-urbanisation.csv"
-    shadow: "full"
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        unzip {input.lau2} -d ./build
-        unzip {input.degurba} -d ./build
-        {PYTHON} {input.src} merge ./build/COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp \
-        ./build/COMM_01M_2013_SH/data/COMM_AT_2013.dbf ./build/raw-lau.gpkg
-        {PYTHON} {input.src} degurba ./build/raw-lau.gpkg ./build/DGURBA_2014_SH/data/DGURBA_RG_01M_2014.shp {output}
         """
 
 
@@ -424,51 +374,4 @@ rule eez_in_europe:
         fio cat --bbox {params.bounds} {input}\
         | fio filter "f.properties.Territory1 in [{params.countries}]"\
         | fio collect > {output}
-        """
-
-
-rule industry:
-    message: "Preprocess data on electricity intensive industry."
-    input:
-        "src/industry.py",
-        RAW_INDUSTRY_DATA
-    output:
-        "build/industrial-load.geojson"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT
-
-
-rule raw_population_zipped:
-    message: "Download population data."
-    output:
-        protected("data/automatic/raw-population-data.zip")
-    shell:
-        "curl -sLo {output} '{URL_POP}'"
-
-
-rule raw_population:
-    message: "Extract population data as zip."
-    input: rules.raw_population_zipped.output
-    output: temp("build/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0.tif")
-    shadow: "minimal"
-    shell:
-        """
-        unzip {input} -d ./build/
-        mv build/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0.tif {output}
-        """
-
-
-rule population_in_europe:
-    message: "Clip population data to bounds of study."
-    input:
-        population = rules.raw_population.output,
-    output:
-        "build/population-europe.tif"
-    params:
-        bounds="{x_min},{y_min},{x_max},{y_max}".format(**config["scope"]["bounds"])
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        rio clip --geographic --bounds {params.bounds} --co compress=LZW {input.population} -o {output}
         """

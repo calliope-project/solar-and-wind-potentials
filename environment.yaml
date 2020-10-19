@@ -1,4 +1,4 @@
-name: possibility-for-electricity-autarky
+name: solar-and-wind-potentials
 channels:
   - conda-forge
   - bioconda

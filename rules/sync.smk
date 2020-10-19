@@ -1,7 +1,7 @@
 # Rules to sync to and from Euler
 
 EULER_URL = "euler.ethz.ch"
-EULER_BASE_DIR = "~/Develop/possibility-for-electricity-autarky/"
+EULER_BASE_DIR = "~/Develop/solar-and-wind-potentials/"
 EULER_BUILD_DIR = EULER_BASE_DIR + "build/"
 LOCAL_EULER_RESULTS = "./build/euler/"
 

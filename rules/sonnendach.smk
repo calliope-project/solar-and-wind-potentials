@@ -24,23 +24,3 @@ rule sonnendach_statistics:
     output: "data/automatic/sonnendach/roof-statistics.csv",
     shell:
         "curl -sLo {output} '{URL_TO_STATISTICS}'"
-
-
-rule sonnendach_statistics_publish:
-    message: "Beautify sonnendach statistics for publication."
-    input: rules.sonnendach_statistics.output
-    output: "build/sonnendach/roof-statistics-publish.csv"
-    run:
-        import pandas as pd
-
-        roof_categories = pd.read_csv(input[0])
-        roof_categories.rename(
-            columns={
-                "orientation": "Orientation",
-                "share_of_roof_areas": "Share of roof areas [%]",
-                "average_tilt": "Average tilt [%]"
-            },
-            inplace=True
-        )
-        roof_categories["Share of roof areas [%]"] = roof_categories["Share of roof areas [%]"] * 100
-        roof_categories.to_csv(output[0], header=True, index=False, float_format="%.1f")
