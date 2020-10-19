@@ -32,7 +32,7 @@ scope:
         - "United Kingdom"
         - "Albania"
         - "Bosnia and Herzegovina"
-        - "Macedonia, Republic of"
+        - "North Macedonia"
         - "Montenegro"
         - "Norway"
         - "Serbia"
@@ -73,7 +73,7 @@ layers:
         United Kingdom: nuts0
         Albania: gadm0
         Bosnia and Herzegovina: gadm0
-        Macedonia, Republic of: gadm0
+        North Macedonia: gadm0
         Montenegro: gadm0
         Norway: nuts0
         Serbia: gadm0
@@ -108,7 +108,7 @@ layers:
         United Kingdom: nuts0
         Albania: gadm0
         Bosnia and Herzegovina: gadm0
-        Macedonia, Republic of: gadm0
+        North Macedonia: gadm0
         Montenegro: gadm0
         Norway: nuts0
         Serbia: gadm0
@@ -147,7 +147,7 @@ layers:
         United Kingdom: gadm1 # match 4
         Albania: gadm1 # match 12
         Bosnia and Herzegovina: gadm1 # match 3
-        Macedonia, Republic of: nuts3 # match 8 (statistical, non-administrative)
+        North Macedonia: nuts3 # match 8 (statistical, non-administrative)
         Montenegro: gadm1 # match 21
         Norway: gadm1 # match 19
         Serbia: gadm1 # gadm1 25 regions; wiki 5 regions
@@ -182,7 +182,7 @@ layers:
         United Kingdom: lau2
         Albania: gadm3
         Bosnia and Herzegovina: gadm3
-        Macedonia, Republic of: gadm1 # 85, instead of 1817 in LAU2; https://en.wikipedia.org/wiki/Municipalities_of_the_Republic_of_Macedonia
+        North Macedonia: gadm1 # 85, instead of 1817 in LAU2; https://en.wikipedia.org/wiki/Municipalities_of_the_Republic_of_Macedonia
         Montenegro: gadm1 # same as regional
         Norway: lau2
         Serbia: lau2
