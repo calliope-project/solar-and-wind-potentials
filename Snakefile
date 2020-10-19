@@ -20,11 +20,11 @@ wildcard_constraints:
 onstart:
     shell("mkdir -p build/logs")
 onsuccess:
-    if "email" in config.keys():
-        shell("echo "" | mail -s 'solar-and-wind-potentials succeeded' {config[email]}")
+    if "pushcut_secret" in config.keys():
+        trigger_pushcut(event_name="snakemake_succeeded", secret=config["pushcut_secret"])
 onerror:
-    if "email" in config.keys():
-        shell("echo "" | mail -s 'solar-and-wind-potentials crashed' {config[email]}")
+    if "pushcut_secret" in config.keys():
+        trigger_pushcut(event_name="snakemake_failed", secret=config["pushcut_secret"])
 
 
 rule all:
@@ -70,3 +70,10 @@ rule test:
     conda: "envs/default.yaml"
     shell:
         "py.test --html={output} --self-contained-html"
+
+
+def trigger_pushcut(event_name, secret):
+    import requests
+    response = requests.post(
+            f'https://api.pushcut.io/{secret}/notifications/{event_name}'
+    )
