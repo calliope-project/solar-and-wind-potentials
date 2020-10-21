@@ -22,6 +22,7 @@ def allocate_eezs(path_to_units, path_to_eezs, path_to_output, threads):
     units = gpd.read_file(path_to_units)
     units.set_index("id", inplace=True)
     eezs = gpd.read_file(path_to_eezs)
+    eezs.geometry = eezs.geometry.map(_buffer_if_necessary)
     with Pool(threads) as pool:
         share_of_coast_length = pool.map(
             _share_of_coast_length,
@@ -66,6 +67,18 @@ def _share_of_coast_length(args):
         )
         share = length_of_shared_coast / length_of_shared_coast.sum()
     return share
+
+
+def _buffer_if_necessary(shape):
+    """Fix shapes which are invalid.
+
+    Following the advice given here:
+    https://github.com/Toblerity/Shapely/issues/344
+    """
+    if not shape.is_valid:
+        shape = shape.buffer(0.0)
+    assert shape.is_valid
+    return shape
 
 
 if __name__ == "__main__":
