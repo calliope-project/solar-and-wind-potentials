@@ -18,25 +18,28 @@ FILE_SUFFIX = "nc"
 @click.argument("path_to_input")
 @click.argument("path_to_output")
 def timeseries(path_to_input, path_to_output):
-    """Create index capacity factor timeseries of renewables from seperate renewables.ninja runs."""
+    """Create index capacity factor timeseries of renewables from separate renewables.ninja runs."""
     ds = xr.open_dataset(path_to_input)
     if "open-field-pv" in path_to_input:
         ds = select_flat_surfaces_only(ds)
+    elif "rooftop-pv" in path_to_input:
+        ds = weigh_capacity_factors(ds)
     ds = groupby_sites(ds)
-
     ds.to_netcdf(path_to_output, "w")
 
 
 def groupby_sites(ds):
-    ds[CAPACITY_FACTOR_VAR] = ds[CAPACITY_FACTOR_VAR] * ds[WEIGHT_VAR]
     cp = ds[[CAPACITY_FACTOR_VAR, SITE_ID_VAR]].groupby(SITE_ID_VAR).sum(dim=SIM_ID_DIMENSION)
     coords = ds[[LAT_VAR, LON_VAR, SITE_ID_VAR]].groupby(SITE_ID_VAR).first()
     return xr.merge([cp, coords])
 
 
 def select_flat_surfaces_only(ds):
-    ds = ds.sel({SIM_ID_DIMENSION: ds[ORIENTATION_VAR] == FLAT_SURFACE})
-    ds[WEIGHT_VAR] = 1 # there is only one simulation per site, hence weight must be one
+    return ds.sel({SIM_ID_DIMENSION: ds[ORIENTATION_VAR] == FLAT_SURFACE})
+
+
+def weigh_capacity_factors(ds):
+    ds[CAPACITY_FACTOR_VAR] = ds[CAPACITY_FACTOR_VAR] * ds[WEIGHT_VAR]
     return ds
 
 

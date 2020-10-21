@@ -8,7 +8,7 @@ protected_areas_in_europe:
     memory: 64000
 settlements:
     cores: 4
-    runtime: 60
+    runtime: 240
 shared_coast:
     cores: 4
     runtime: 60

@@ -34,8 +34,8 @@ rule total_size_swiss_building_footprints_according_to_settlement_data:
     output:
         "build/building-footprints-according-to-settlement-data-km2.txt"
     conda: "../envs/default.yaml"
-    script:
-        "../src/swiss_building_footprints.py"
+    shell:
+        PYTHON_SCRIPT
 
 
 rule correction_factor_building_footprint_to_available_rooftop:
