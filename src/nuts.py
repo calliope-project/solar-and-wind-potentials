@@ -9,7 +9,7 @@ import pycountry
 
 from gadm import SCHEMA, _to_multi_polygon, _test_id_uniqueness
 from conversion import eu_country_code_to_iso3
-from utils import Config
+from utils import Config, buffer_if_necessary
 
 OUTPUT_DRIVER = "GPKG"
 LAYER_NAME = "nuts{layer_id}"
@@ -26,7 +26,7 @@ def nuts():
 def to_multipolygon(path_to_shapes, path_to_output):
     """Map NUTS shapes to multipolygon."""
     shapes = gpd.read_file(path_to_shapes)
-    shapes.geometry = shapes.geometry.buffer(0).map(_to_multi_polygon)
+    shapes.geometry = shapes.geometry.map(buffer_if_necessary).map(_to_multi_polygon)
     shapes.drop('FID', axis=1).to_file(
         path_to_output, driver=OUTPUT_DRIVER
     )

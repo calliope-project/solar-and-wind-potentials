@@ -1,10 +1,13 @@
+from snakemake.utils import validate
+
 PYTHON = "PYTHONPATH=./ python"
 PYTHON_SCRIPT = "PYTHONPATH=./ python {input} {output}"
 PYTHON_SCRIPT_WITH_CONFIG = PYTHON_SCRIPT + " {CONFIG_FILE}"
 
-CONFIG_FILE = "config/default.yaml"
+CONFIG_FILE = "config/default{}.yaml"
+configfile: CONFIG_FILE.format("")
+validate(config, CONFIG_FILE.format(".schema"))
 
-configfile: CONFIG_FILE
 include: "rules/data-preprocessing.smk"
 include: "rules/sonnendach.smk"
 include: "rules/capacityfactors.smk"
