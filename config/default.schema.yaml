@@ -6,6 +6,6 @@ properties:
         properties:
             nuts-year:
                 type: number
-                enum: [2006, 2010, 2013, 2016, 2018]
+                enum: [2006, 2010, 2013, 2016, 2021]
                 default: 2016
                 description: Indicates the reference NUTS year
