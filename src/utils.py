@@ -90,3 +90,15 @@ def _area_of_pixel(pixel_size, center_lat):
                 math.log(zp / zm) / (2 * e) +
                 math.sin(math.radians(f)) / (zp * zm)))
     return pixel_size / 360. * (area_list[0] - area_list[1]) / 1e6
+
+
+def buffer_if_necessary(shape):
+    """Fix shapes which are invalid.
+
+    Following the advice given here:
+    https://github.com/Toblerity/Shapely/issues/344
+    """
+    if not shape.is_valid:
+        shape = shape.buffer(0.0)
+    assert shape.is_valid
+    return shape
