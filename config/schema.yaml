@@ -1,0 +1,11 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: Default configuration schema
+properties:
+    parameters:
+        type: object
+        properties:
+            nuts-year:
+                type: number
+                enum: [2006, 2010, 2013, 2016, 2021]
+                default: 2016
+                description: Indicates the reference NUTS year

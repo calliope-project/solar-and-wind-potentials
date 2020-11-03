@@ -5,7 +5,7 @@ import pycountry
 
 import administrative_border_utils
 from conversion import eu_country_code_to_iso3
-from utils import Config
+from utils import Config, buffer_if_necessary
 
 OUTPUT_DRIVER = "GPKG"
 LAYER_NAME = "nuts{}"
