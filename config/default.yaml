@@ -43,6 +43,13 @@ scope:
         x_max: 37  # in degrees east
         y_min: 30  # in degrees north
         y_max: 75  # in degrees north
+    exclusion_zones:
+        atlantic_islands:
+            x_min: -29.5 # in degrees east
+            x_max: -15  # in degrees east
+            y_min: 31  # in degrees north
+            y_max: 41  # in degrees north
+
 layers:
     continental:
         Austria: nuts0

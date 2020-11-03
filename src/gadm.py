@@ -6,6 +6,7 @@ import fiona
 import fiona.transform
 import geopandas as gpd
 import shapely.geometry
+import shapely.errors
 from shapely.prepared import prep
 
 import administrative_border_utils
