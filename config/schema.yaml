@@ -9,3 +9,105 @@ properties:
                 enum: [2006, 2010, 2013, 2016, 2021]
                 default: 2016
                 description: Indicates the reference NUTS year
+    crs:
+        type: string
+        enum: ["EPSG:4326"]
+        default: "EPSG:4326"
+        description: Coordinate reference system to which all datasets are reprojected during preprocessing
+    scope:
+        type: object
+        properties:
+            countries:
+                type: array
+                items:
+                    type: string
+                    enum:
+                        - "Austria"
+                        - "Belgium"
+                        - "Bulgaria"
+                        - "Croatia"
+                        - "Cyprus"
+                        - "Czech Republic"
+                        - "Denmark"
+                        - "Estonia"
+                        - "Finland"
+                        - "France"
+                        - "Germany"
+                        - "Greece"
+                        - "Hungary"
+                        - "Ireland"
+                        - "Italy"
+                        - "Latvia"
+                        - "Lithuania"
+                        - "Luxembourg"
+                        - "Netherlands"
+                        - "Poland"
+                        - "Portugal"
+                        - "Romania"
+                        - "Slovakia"
+                        - "Slovenia"
+                        - "Spain"
+                        - "Sweden"
+                        - "United Kingdom"
+                        - "Albania"
+                        - "Bosnia and Herzegovina"
+                        - "North Macedonia"
+                        - "Montenegro"
+                        - "Norway"
+                        - "Serbia"
+                        - "Switzerland"
+                        - "Iceland"
+                    description: Countries to include in the model
+            bounds:
+                type: object
+                properties:
+                    x_min:
+                        type: number
+                        default: -30
+                        minimum: -180
+                        maximum: 180
+                        description: Minimum longitude, in degrees east
+                    x_max:
+                        type: number
+                        default: 37
+                        minimum: -180
+                        maximum: 180
+                        description: Maximum longitude, in degrees east
+                    y_min:
+                        type: number
+                        default: 30
+                        minimum: -90
+                        maximum: 90
+                        description: Minimum Latitude, in degrees north
+                    y_max:
+                        type: number
+                        default: 75
+                        minimum: -90
+                        maximum: 90
+                        description: Maximum Latitude, in degrees north
+                description: Total extent of system under study. Defaults to all of Europe
+            exclusion_zones:
+                patternProperties:
+                    ^.*$:
+                        properties:
+                            x_min:
+                                type: number
+                                minimum: -180
+                                maximum: 180
+                                description: Minimum longitude, in degrees east
+                            x_max:
+                                type: number
+                                minimum: -180
+                                maximum: 180
+                                description: Maximum longitude, in degrees east
+                            y_min:
+                                type: number
+                                minimum: -90
+                                maximum: 90
+                                description: Minimum Latitude, in degrees north
+                            y_max:
+                                type: number
+                                minimum: -90
+                                maximum: 90
+                                description: Maximum Latitude, in degrees north
+                description: Any number of bounding boxes defining exclusion zones, where spatial features within the total bounds are to be ignored.

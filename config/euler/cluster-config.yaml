@@ -29,5 +29,5 @@ time_average_capacityfactor_map:
     memory: 32000
 national_boundaries:
     runtime: 60
-administrative_borders_lau:
+administrative_borders:
     runtime: 60

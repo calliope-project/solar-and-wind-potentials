@@ -5,7 +5,7 @@ import shapely.errors
 import pycountry
 
 from conversion import eu_country_code_to_iso3
-from utils import Config
+from utils import Config, buffer_if_necessary
 
 OUTPUT_DRIVER = 'GPKG'
 SCHEMA = {
@@ -35,7 +35,7 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, path_to_out
     }.items():
         gdf = gpd.read_file(_path)
         gdf = gdf.to_crs(config["crs"])
-        gdf.geometry = gdf.geometry.buffer(0).map(_to_multi_polygon)
+        gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(_to_multi_polygon)
         gdf = _update_features(gdf, _src)
         gdf = _drop_countries(gdf, config)
         gdf = _drop_geoms(gdf, config)
@@ -143,18 +143,15 @@ def _study_area(config):
     exclusion zones. For plotting purposes, exclusion zones and the bounding box are
     defined in opposite orientations, see https://github.com/geopandas/geopandas/issues/951
     """
-    if config["scope"].get("exclusion_zones", {}) and isinstance(config["scope"]["exclusion_zones"], dict):
-        holes = [
-            (
-                (exclusion_zone["x_max"], exclusion_zone["y_min"]),
-                (exclusion_zone["x_max"], exclusion_zone["y_max"]),
-                (exclusion_zone["x_min"], exclusion_zone["y_max"]),
-                (exclusion_zone["x_min"], exclusion_zone["y_min"])
-            )
-            for exclusion_zone in config["scope"]["exclusion_zones"].values()
-        ]
-    else:
-        holes = []
+    holes = [
+        (
+            (exclusion_zone["x_max"], exclusion_zone["y_min"]),
+            (exclusion_zone["x_max"], exclusion_zone["y_max"]),
+            (exclusion_zone["x_min"], exclusion_zone["y_max"]),
+            (exclusion_zone["x_min"], exclusion_zone["y_min"])
+        )
+        for exclusion_zone in config["scope"].get("exclusion_zones", {}).values()
+    ]
 
     study_area = shapely.geometry.Polygon(
         ((config["scope"]["bounds"]["x_min"], config["scope"]["bounds"]["y_min"]),
@@ -163,8 +160,7 @@ def _study_area(config):
         (config["scope"]["bounds"]["x_max"], config["scope"]["bounds"]["y_min"])),
         holes=holes
     )
-    if study_area.is_valid is False:
-        study_area = study_area.buffer(0)
+    study_area = buffer_if_necessary(study_area)
 
     return study_area
 
