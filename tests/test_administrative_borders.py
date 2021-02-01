@@ -3,10 +3,12 @@ import yaml
 import geopandas as gpd
 import pytest
 import shapely.geometry
+import pycountry
 
-from src.administrative_borders import _study_area, _to_multi_polygon
-# Loading the 20M file for its smaller size (1M used in actual workflow)
-URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_20M_{}_4326.shp.zip"
+from src.administrative_borders import _study_area, _to_multi_polygon, _drop_countries, _drop_geoms
+from src.conversion import eu_country_code_to_iso3
+# Loading the 60M file for its smaller size (1M used in actual workflow)
+URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_60M_{}_4326.geojson"
 
 with open('config/schema.yaml', 'r') as src:
     config_schema = yaml.safe_load(src)
@@ -50,13 +52,14 @@ def europe_gdf():
 @pytest.mark.parametrize("year", config_schema["properties"]["parameters"]["properties"]["nuts-year"]["enum"])
 def test_nuts_years(year):
     gdf = gpd.read_file(URL_NUTS.format(year))
-    cols = ['FID', 'NUTS_ID', 'LEVL_CODE', 'NUTS_NAME']
+    cols = ['id', 'FID', 'LEVL_CODE', 'NUTS_NAME']
     assert all(i in gdf.columns for i in cols)
 
 
 def test_bounding_box(config):
     area = _study_area(config())
     assert area.bounds == (0.0, 50.0, 1.0, 51.0)
+
 
 @pytest.mark.parametrize(
     "exclusions,not_in,is_in",
@@ -73,6 +76,7 @@ def test_exclusion_zone(exclusions, not_in, is_in, config):
     assert not shapely.geometry.Point(not_in).within(area)
     assert shapely.geometry.Point(is_in).within(area)
 
+
 def test_multipolygon(europe_gdf):
     gdf = europe_gdf()
     assert any([isinstance(i, shapely.geometry.Polygon) for i in gdf.geometry])
@@ -80,3 +84,51 @@ def test_multipolygon(europe_gdf):
     gdf = gdf.map(_to_multi_polygon)
 
     assert all([isinstance(i, shapely.geometry.MultiPolygon) for i in gdf.geometry])
+
+
+def test_drop_countries(europe_gdf):
+    config = {
+        "scope": {"countries": ["Germany", "France", "Greece"]}
+    }
+    gdf = europe_gdf().rename(columns={'CNTR_CODE': 'country_code'})
+    gdf["country_code"] = gdf["country_code"].apply(eu_country_code_to_iso3)
+
+    assert all([
+        pycountry.countries.lookup(i).alpha_3 in gdf.country_code.unique()
+        for i in config_schema["properties"]["scope"]["properties"]["countries"]["enum"]
+    ])
+
+    gdf = _drop_countries(gdf, config)
+
+    assert set(gdf.country_code) == set(
+        [pycountry.countries.lookup(i).alpha_3 for i in config["scope"]["countries"]]
+    )
+
+
+def test_drop_geoms(capsys, europe_gdf):
+    config = {
+        "scope": {
+            'bounds': {  # IRE and GBR, not including shetland and some of cornwall
+                'x_min': -11.12,
+                'x_max': 2.24,
+                'y_min': 51.11,
+                'y_max': 59.72,
+            }
+        }
+    }
+
+    with capsys.readouterr() as captured:
+        gdf = _drop_geoms(europe_gdf, config)
+    assert sorted(gdf.country_code.unique()) == sorted(['IRL', 'GBR'])
+    not_dropped = ['IRL', 'North West (England)', 'United Kingdom', 'Ireland']
+    for i in not_dropped:
+        assert i not in captured.out
+
+    dropped = [
+        "Removing parts of Shetland Islands (nuts3) as they are outside of study area",
+        "Removing France (nuts0, country=FRA) as they are outside of study area",
+        "(FRA)",
+        "(GBR)",
+    ]
+    for i in dropped:
+        assert i in captured.out

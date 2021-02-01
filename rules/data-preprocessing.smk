@@ -2,7 +2,7 @@
 import pycountry
 
 URL_LOAD = "https://data.open-power-system-data.org/time_series/2018-06-30/time_series_60min_stacked.csv"
-URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_01M_{}_4326.shp.zip"
+URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_{}_4326.geojson"
 URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip"
 URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
 URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
@@ -62,10 +62,10 @@ rule all_gadm_administrative_borders:
         """
 
 
-rule raw_nuts_units_zipped:
-    message: "Download units as zip."
+rule raw_nuts_units:
+    message: "Download NUTS units as GeoJSON."
     output:
-        protected("data/automatic/raw-nuts{}-units.zip".format(config["parameters"]["nuts-year"]))
+        protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
     params:
         url = URL_NUTS.format(config["parameters"]["nuts-year"])
     shell:
@@ -102,19 +102,16 @@ rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
         src = "src/administrative_borders.py",
-        nuts_zip = rules.raw_nuts_units_zipped.output,
+        nuts_geojson = rules.raw_nuts_units.output,
         gadm_gpkg = rules.all_gadm_administrative_borders.output,
         lau_gpkg = rules.administrative_borders_lau.output
     output:
         "build/administrative-borders.gpkg"
     shadow: "full"
-    params:
-        year = config['parameters']['nuts-year']
     conda: "../envs/default.yaml"
     shell:
         """
-        unzip {input.nuts_zip} -d ./build/NUTS_RG_01M_{params.year}_4326/
-        {PYTHON} {input.src} ./build/NUTS_RG_01M_{params.year}_4326 {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}
+        {PYTHON} {input.src} {input.nuts_geojson} {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}
         """
 
 

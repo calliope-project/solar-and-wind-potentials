@@ -66,7 +66,7 @@ rule test:
         "build/technically-eligible-land.tif",
         "build/technically-eligible-area-km2.tif",
         "build/technically-eligible-electricity-yield-pv-prio-twh.tif",
-        "build/administrative-borders-nuts.gpkg",
+        "build/administrative-borders.gpkg",
         "data/automatic/sonnendach/total-rooftop-area-km2.txt",
         "data/automatic/sonnendach/total-yield-twh.txt"
     output: "build/logs/test-report.html"

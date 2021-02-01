@@ -53,9 +53,7 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, path_to_out
 def _update_features(gdf, src):
     if src == 'nuts':
         gdf["CNTR_CODE"] = gdf.CNTR_CODE.apply(eu_country_code_to_iso3)
-        gdf = gdf.rename(
-            columns={"NUTS_ID": "id", "NUTS_NAME": "name", "CNTR_CODE": "country_code"}
-        )
+        gdf = gdf.rename(columns={"NUTS_NAME": "name", "CNTR_CODE": "country_code"})
         gdf["type"] = gdf.LEVL_CODE.map({0: "country"})
         gdf["proper"] = True
         gdf = gdf.drop(columns=["FID"])
@@ -108,8 +106,8 @@ def _drop_geoms(gdf, config):
     completely_in = gdf.intersects(study_area)
     for i in gdf[~completely_in].iterrows():
         print(
-            "Removing {} ({}) as they are outside of study area."
-            .format(*i[1][["name", "level"]])
+            "Removing {} ({}, country={}) as they are outside of study area."
+            .format(*i[1][["name", "level", "country_code"]])
         )
     gdf = gdf[completely_in]
 
@@ -118,8 +116,8 @@ def _drop_geoms(gdf, config):
     partially_out = ~partially_in.groupby(level=0).min()
     for i in gdf.loc[partially_out].iterrows():
         print(
-            "Removing parts of {} ({}) as they are outside of study area."
-            .format(*i[1][["name", "level"]])
+            "Removing parts of {} ({}, country={}) as they are outside of study area."
+            .format(*i[1][["name", "level", "country_code"]])
         )
     # Unlike groupby, dissolve can only operate on columns, not multiindex levels
     new_geoms = all_geoms[partially_in.mul(partially_out, level=0)].reset_index().dissolve('level_0')
