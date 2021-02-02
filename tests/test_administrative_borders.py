@@ -1,17 +1,25 @@
+import os
 import yaml
+from pathlib import Path
 
 import geopandas as gpd
 import pytest
 import shapely.geometry
 import pycountry
+import fiona
 
 from src.administrative_borders import _study_area, _to_multi_polygon, _drop_countries, _drop_geoms
 from src.conversion import eu_country_code_to_iso3
 # Loading the 60M file for its smaller size (1M used in actual workflow)
 URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_60M_{}_4326.geojson"
+ROOT_DIR = Path(os.path.abspath(__file__)).parent.parent
+PATH_TO_BORDERS = ROOT_DIR / "build" / "administrative-borders.gpkg"
 
 with open('config/schema.yaml', 'r') as src:
     config_schema = yaml.safe_load(src)
+
+with open('config/default.yaml', 'r') as src:
+    config_default = yaml.safe_load(src)
 
 @pytest.fixture
 def config(exclusions=0):
@@ -132,3 +140,10 @@ def test_drop_geoms(capsys, europe_gdf):
     ]
     for i in dropped:
         assert i in captured.out
+
+def test_administratice_border_layers(config_default):
+    layers = fiona.listlayers(PATH_TO_BORDERS)
+    default_layers = set(
+        v for countries in config_default['layers'].values() for k, v in countries.items()
+    )
+    assert len(default_layers.difference(layers)) == 0

@@ -13,7 +13,7 @@ dependencies:
   - fiona=1.8.4
   - rasterio=1.0.25
   - rasterstats=0.13.0
-  - geopandas=0.4.1
+  - geopandas=0.8.2
   - xarray=0.12.1
   - netcdf4=1.5.1.2
   - pyyaml=5.1

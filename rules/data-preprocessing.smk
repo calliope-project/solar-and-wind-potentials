@@ -28,7 +28,7 @@ GMTED_Y = ["50N", "70N"]
 GMTED_X = ["030W", "000E", "030E"]
 
 localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
-    raw_nuts_units_zipped, raw_lau_units_zipped, raw_land_cover_zipped,
+    raw_lau_units_zipped, raw_land_cover_zipped,
     raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
     raw_bathymetry_zipped, raw_bathymetry, raw_gadm_administrative_borders
 
