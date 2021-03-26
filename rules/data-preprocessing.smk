@@ -153,23 +153,20 @@ rule raw_protected_areas:
     shell:
         """
         set +e
-        unzip -o {input} -d build/raw-wdpa
-        unzip -o build/raw-wdpa/WDPA_{params.version}-shapefile0.zip -d build/raw-wdpa/WDPA_to_merge_0
-        unzip -o build/raw-wdpa/WDPA_{params.version}-shapefile1.zip -d build/raw-wdpa/WDPA_to_merge_1
-        unzip -o build/raw-wdpa/WDPA_{params.version}-shapefile2.zip -d build/raw-wdpa/WDPA_to_merge_2
-        ogrmerge.py -single -o {output.polygons} build/raw-wdpa/WDPA_to_merge_**/*-polygons.shp
+        unzip {input} *.zip -d build/raw-wdpa-temp
+        unzip -o build/raw-wdpa-temp/WDPA_{params.version}_Public_shp_0.zip -d build/raw-wdpa-temp/WDPA_to_merge_0
+        unzip -o build/raw-wdpa-temp/WDPA_{params.version}_Public_shp_1.zip -d build/raw-wdpa-temp/WDPA_to_merge_1
+        unzip -o build/raw-wdpa-temp/WDPA_{params.version}_Public_shp_2.zip -d build/raw-wdpa-temp/WDPA_to_merge_2
+        ogrmerge.py -single -o {output.polygons} build/raw-wdpa-temp/WDPA_to_merge_**/*-polygons.shp
+        ogrmerge.py -single -o {output.points} build/raw-wdpa-temp/WDPA_to_merge_**/*-points.shp
+        rm -r build/raw-wdpa-temp/
         exitcode=$?
         if [ $exitcode -eq 1 ]
         then
             exit 1
+        else
+            exit 0
         fi
-        ogrmerge.py -single -o {output.points} build/raw-wdpa/WDPA_to_merge_**/*-points.shp
-        exitcode=$?
-        if [ $exitcode -eq 1 ]
-        then
-            exit 1
-        fi
-        rm -r build/raw-wdpa/WDPA_to_merge_*
         """
 
 
