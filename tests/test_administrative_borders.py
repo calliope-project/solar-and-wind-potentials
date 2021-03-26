@@ -8,7 +8,7 @@ import shapely.geometry
 import pycountry
 import fiona
 
-from src.administrative_borders import _study_area, _to_multi_polygon, _drop_countries, _drop_geoms
+from src.administrative_borders import _study_area, _to_multi_polygon, _drop_countries, _drop_geoms_completely_outside_study_area, _drop_parts_of_geoms_completely_outside_study_area
 from src.conversion import eu_country_code_to_iso3
 # Loading the 60M file for its smaller size (1M used in actual workflow)
 URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_60M_{}_4326.geojson"
@@ -54,7 +54,7 @@ def config(exclusions=0):
 @pytest.fixture
 def europe_gdf():
     return gpd.read_file(
-        URL_NUTS.format(config_schema["properties"]["parameters"]["properties"]["nuts-year"]["default"])
+        URL_NUTS.format(config_default["parameters"]["nuts-year"])
     )
 
 @pytest.mark.parametrize("year", config_schema["properties"]["parameters"]["properties"]["nuts-year"]["enum"])
@@ -87,7 +87,7 @@ def test_exclusion_zone(exclusions, not_in, is_in, config):
 
 def test_multipolygon(europe_gdf):
     gdf = europe_gdf()
-    assert any([isinstance(i, shapely.geometry.Polygon) for i in gdf.geometry])
+    assert not all([isinstance(i, shapely.geometry.Polygon) for i in gdf.geometry])
 
     gdf = gdf.map(_to_multi_polygon)
 
@@ -101,10 +101,9 @@ def test_drop_countries(europe_gdf):
     gdf = europe_gdf().rename(columns={'CNTR_CODE': 'country_code'})
     gdf["country_code"] = gdf["country_code"].apply(eu_country_code_to_iso3)
 
-    assert all([
-        pycountry.countries.lookup(i).alpha_3 in gdf.country_code.unique()
-        for i in config_schema["properties"]["scope"]["properties"]["countries"]["enum"]
-    ])
+    assert set(gdf.country_code) != set(
+        [pycountry.countries.lookup(i).alpha_3 for i in config["scope"]["countries"]]
+    )
 
     gdf = _drop_countries(gdf, config)
 
@@ -126,14 +125,11 @@ def test_drop_geoms(capsys, europe_gdf):
     }
 
     with capsys.readouterr() as captured:
-        gdf = _drop_geoms(europe_gdf, config)
-    assert sorted(gdf.country_code.unique()) == sorted(['IRL', 'GBR'])
+        gdf = _drop_geoms_completely_outside_study_area(europe_gdf, config)
     not_dropped = ['IRL', 'North West (England)', 'United Kingdom', 'Ireland']
     for i in not_dropped:
         assert i not in captured.out
-
     dropped = [
-        "Removing parts of Shetland Islands (nuts3) as they are outside of study area",
         "Removing France (nuts0, country=FRA) as they are outside of study area",
         "(FRA)",
         "(GBR)",
@@ -141,7 +137,19 @@ def test_drop_geoms(capsys, europe_gdf):
     for i in dropped:
         assert i in captured.out
 
-def test_administratice_border_layers(config_default):
+    with capsys.readouterr() as captured:
+        gdf = _drop_parts_of_geoms_completely_outside_study_area(gdf, config)
+    for i in not_dropped:
+        assert i not in captured.out
+    dropped = [
+        "Removing parts of Shetland Islands (nuts3) as they are outside of study area",
+        "(GBR)",
+    ]
+    for i in dropped:
+        assert i in captured.out
+    assert sorted(gdf.country_code.unique()) == sorted(['IRL', 'GBR'])
+
+def test_administrative_border_layers(config_default):
     layers = fiona.listlayers(PATH_TO_BORDERS)
     default_layers = set(
         v for countries in config_default['layers'].values() for k, v in countries.items()

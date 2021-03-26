@@ -42,18 +42,18 @@ rule raw_gadm_administrative_borders_zipped:
 rule raw_gadm_administrative_borders:
     message: "Unzip administrative borders of {wildcards.country_code} as zip."
     input: "data/automatic/raw-gadm/{country_code}.zip"
-    output: temp("data/automatic/raw-gadm/gadm36_{country_code}.gpkg")
-    shell: "unzip -o {input} -d data/automatic/raw-gadm"
+    output: temp("build/raw-gadm/gadm36_{country_code}.gpkg")
+    shell: "unzip -o {input} -d build/raw-gadm"
 
 
 rule all_gadm_administrative_borders:
     message: "Merge gadm administrative borders of all countries."
     input:
-        ["data/automatic/raw-gadm/gadm36_{}.gpkg".format(country_code)
+        ["build/raw-gadm/gadm36_{}.gpkg".format(country_code)
             for country_code in [pycountry.countries.lookup(country).alpha_3
                                  for country in config['scope']['countries']]
          ]
-    output: temp("data/automatic/raw-gadm/gadm36.gpkg")
+    output: temp("build/raw-gadm/gadm36.gpkg")
     params: crs = config["crs"]
     conda: '../envs/default.yaml'
     shell:
@@ -86,7 +86,7 @@ rule administrative_borders_lau:
         src = "src/lau.py",
         zip = rules.raw_lau_units_zipped.output
     output:
-        temp("build/raw-lau-identified.gpkg")
+        temp("build/raw-lau.gpkg")
     shadow: "full"
     conda: "../envs/default.yaml"
     shell:
@@ -94,7 +94,6 @@ rule administrative_borders_lau:
         unzip {input.zip} -d ./build
         {PYTHON} {input.src} merge ./build/COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp \
         ./build/COMM_01M_2013_SH/data/COMM_AT_2013.dbf ./build/raw-lau.gpkg
-        {PYTHON} {input.src} identify ./build/raw-lau.gpkg ./build/raw-lau-identified.gpkg
         """
 
 
@@ -109,10 +108,7 @@ rule administrative_borders:
         "build/administrative-borders.gpkg"
     shadow: "full"
     conda: "../envs/default.yaml"
-    shell:
-        """
-        {PYTHON} {input.src} {input.nuts_geojson} {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}
-        """
+    shell: "{PYTHON} {input.src} {input.nuts_geojson} {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}"
 
 
 rule raw_land_cover_zipped:

@@ -38,7 +38,8 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, path_to_out
         gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(_to_multi_polygon)
         gdf = _update_features(gdf, _src)
         gdf = _drop_countries(gdf, config)
-        gdf = _drop_geoms(gdf, config)
+        gdf = _drop_geoms_completely_outside_study_area(gdf, config)
+        gdf = _drop_parts_of_geoms_completely_outside_study_area(gdf, config)
 
         assert gdf.id.duplicated().sum() == 0
 
@@ -101,23 +102,27 @@ def _drop_countries(gdf, config):
     return gdf[gdf.country_code.isin(countries)]
 
 
-def _drop_geoms(gdf, config):
+def _drop_geoms_completely_outside_study_area(gdf, config):
     study_area = _study_area(config)
     completely_in = gdf.intersects(study_area)
-    for i in gdf[~completely_in].iterrows():
+    for row_index, row in gdf[~completely_in].iterrows():
         print(
             "Removing {} ({}, country={}) as they are outside of study area."
-            .format(*i[1][["name", "level", "country_code"]])
+            .format(*row[["name", "level", "country_code"]])
         )
     gdf = gdf[completely_in]
 
+    return gdf
+
+def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
+    study_area = _study_area(config)
     all_geoms = gdf.explode()
     partially_in = all_geoms.within(study_area)
     partially_out = ~partially_in.groupby(level=0).min()
-    for i in gdf.loc[partially_out].iterrows():
+    for row_index, row in gdf.loc[partially_out].iterrows():
         print(
             "Removing parts of {} ({}, country={}) as they are outside of study area."
-            .format(*i[1][["name", "level", "country_code"]])
+            .format(*row[["name", "level", "country_code"]])
         )
     # Unlike groupby, dissolve can only operate on columns, not multiindex levels
     new_geoms = all_geoms[partially_in.mul(partially_out, level=0)].reset_index().dissolve('level_0')

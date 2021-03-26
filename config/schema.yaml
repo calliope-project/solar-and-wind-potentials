@@ -7,12 +7,10 @@ properties:
             nuts-year:
                 type: number
                 enum: [2006, 2010, 2013, 2016, 2021]
-                default: 2016
                 description: Indicates the reference NUTS year
     crs:
         type: string
         enum: ["EPSG:4326"]
-        default: "EPSG:4326"
         description: Coordinate reference system to which all datasets are reprojected during preprocessing
     scope:
         type: object
@@ -63,25 +61,21 @@ properties:
                 properties:
                     x_min:
                         type: number
-                        default: -30
                         minimum: -180
                         maximum: 180
                         description: Minimum longitude, in degrees east
                     x_max:
                         type: number
-                        default: 37
                         minimum: -180
                         maximum: 180
                         description: Maximum longitude, in degrees east
                     y_min:
                         type: number
-                        default: 30
                         minimum: -90
                         maximum: 90
                         description: Minimum Latitude, in degrees north
                     y_max:
                         type: number
-                        default: 75
                         minimum: -90
                         maximum: 90
                         description: Maximum Latitude, in degrees north

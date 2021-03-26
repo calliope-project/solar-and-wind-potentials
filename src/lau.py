@@ -2,10 +2,8 @@
 import click
 import geopandas as gpd
 import pandas as pd
-import pycountry
 
 from administrative_borders import _to_multi_polygon
-from conversion import eu_country_code_to_iso3
 from utils import Config
 
 OUTPUT_DRIVER = "GeoJSON"
@@ -28,23 +26,19 @@ def merge(path_to_shapes, path_to_attributes, path_to_output):
     attributes = gpd.read_file(path_to_attributes)
     attributes = pd.DataFrame(attributes) # to be able to remove the geo information
     del attributes["geometry"]
-    shapes.merge(attributes, on="COMM_ID", how="left").to_file(path_to_output, driver=OUTPUT_DRIVER)
+    all_shapes = shapes.merge(attributes, on="COMM_ID", how="left")
+    all_shapes_no_kosovo = _identify(all_shapes)
+    all_shapes_no_kosovo.to_file(path_to_output, driver=OUTPUT_DRIVER)
 
 
-@lau.command()
-@click.argument("path_to_shapes")
-@click.argument("path_to_output")
-def identify(path_to_shapes, path_to_output):
+def _identify(shapes):
     """Identify and remove municipalities in Kosovo.
 
     Those municipalities must be removed as we do not have load data and pycountry
     cannot handle them at the moment (as of 2018, Kosovo does not have a standardised
     country code).
     """
-    gpd.read_file(path_to_shapes).set_index("COMM_ID").drop(KOSOVO_MUNICIPALITIES).reset_index().to_file(
-        path_to_output,
-        driver=OUTPUT_DRIVER
-    )
+    return shapes.set_index("COMM_ID").drop(KOSOVO_MUNICIPALITIES).reset_index()
 
 
 @lau.command()

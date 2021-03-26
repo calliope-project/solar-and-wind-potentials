@@ -26,10 +26,9 @@ def remix_units(path_to_borders, path_to_output, layer_name, config):
 
 
 def _read_source_layers(path_to_borders, layers):
-    unique_layers = set(layers.values())
     source_layers = {
         layer_name: gpd.read_file(path_to_borders, layer=layer_name)
-        for layer_name in unique_layers
+        for layer_name in set(layers.values())
     }
     return source_layers
 
