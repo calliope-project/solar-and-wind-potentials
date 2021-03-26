@@ -168,9 +168,8 @@ rule raw_protected_areas:
         if [ $exitcode -eq 1 ]
         then
             exit 1
-        else
-            exit 0
         fi
+        rm -r build/raw-wdpa/WDPA_to_merge_*
         """
 
 
