@@ -136,7 +136,7 @@ rule raw_protected_areas_zipped:
     message: "Download protected areas data as zip."
     output: protected("data/automatic/raw-wdpa.zip")
     params:
-        url = URL_PROTECTED_AREAS.format(config["parameters"]["wdpa-date"])
+        url = URL_PROTECTED_AREAS.format(config["parameters"]["wdpa-version"])
     shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
@@ -144,7 +144,7 @@ rule raw_protected_areas:
     message: "Extract protected areas data as zip."
     input: rules.raw_protected_areas_zipped.output
     params:
-        year = config["parameters"]["wdpa-date"]
+        version = config["parameters"]["wdpa-version"]
     output:
         polygons = "build/raw-wdpa/wdpa-shapes.shp",
         polygon_data = "build/raw-wdpa/wdpa-shapes.dbf",
@@ -154,11 +154,16 @@ rule raw_protected_areas:
         """
         set +e
         unzip -o {input} -d build/raw-wdpa
-        unzip -o build/raw-wdpa/WDPA_{params.year}-shapefile0.zip -d build/raw-wdpa/WDPA_to_merge_0
-        unzip -o build/raw-wdpa/WDPA_{params.year}-shapefile1.zip -d build/raw-wdpa/WDPA_to_merge_0
-        unzip -o build/raw-wdpa/WDPA_{params.year}-shapefile2.zip -d build/raw-wdpa/WDPA_to_merge_0
+        unzip -o build/raw-wdpa/WDPA_{params.version}-shapefile0.zip -d build/raw-wdpa/WDPA_to_merge_0
+        unzip -o build/raw-wdpa/WDPA_{params.version}-shapefile1.zip -d build/raw-wdpa/WDPA_to_merge_1
+        unzip -o build/raw-wdpa/WDPA_{params.version}-shapefile2.zip -d build/raw-wdpa/WDPA_to_merge_2
         ogrmerge.py -single -o {output.polygons} build/raw-wdpa/WDPA_to_merge_**/*-polygons.shp
-        ogrmerge.py -single -o {output.polygons} build/raw-wdpa/WDPA_to_merge_**/*-points.shp
+        exitcode=$?
+        if [ $exitcode -eq 1 ]
+        then
+            exit 1
+        fi
+        ogrmerge.py -single -o {output.points} build/raw-wdpa/WDPA_to_merge_**/*-points.shp
         exitcode=$?
         if [ $exitcode -eq 1 ]
         then
