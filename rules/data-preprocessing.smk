@@ -6,7 +6,7 @@ URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/N
 URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip"
 URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
 URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
-URL_PROTECTED_AREAS = "https://www.protectedplanet.net/downloads/WDPA_Feb2019?type=shapefile"
+URL_PROTECTED_AREAS = "http://d1gam3xoknrgr2.cloudfront.net/current/WDPA_{}_Public_shp.zip"
 URL_CGIAR_TILE = "http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/"
 URL_GMTED_TILE = "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED/075darcsec/mea/"
 URL_GADM = "https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/"
@@ -135,17 +135,38 @@ rule raw_land_cover:
 rule raw_protected_areas_zipped:
     message: "Download protected areas data as zip."
     output: protected("data/automatic/raw-wdpa.zip")
-    shell: "curl -sLo {output} -H 'Referer: {URL_PROTECTED_AREAS}' {URL_PROTECTED_AREAS}"
+    params:
+        url = URL_PROTECTED_AREAS.format(config["parameters"]["wdpa-date"])
+    shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
 rule raw_protected_areas:
     message: "Extract protected areas data as zip."
     input: rules.raw_protected_areas_zipped.output
+    params:
+        year = config["parameters"]["wdpa-date"]
     output:
-        polygons = "build/raw-wdpa-feb2019/WDPA_Feb2019-shapefile-polygons.shp",
-        polygon_data = "build/raw-wdpa-feb2019/WDPA_Feb2019-shapefile-polygons.dbf",
-        points = "build/raw-wdpa-feb2019/WDPA_Feb2019-shapefile-points.shp"
-    shell: "unzip -o {input} -d build/raw-wdpa-feb2019"
+        polygons = "build/raw-wdpa/wdpa-shapes.shp",
+        polygon_data = "build/raw-wdpa/wdpa-shapes.dbf",
+        points = "build/raw-wdpa/wdpa-points.shp"
+    conda: "../envs/default.yaml"
+    shell:
+        """
+        set +e
+        unzip -o {input} -d build/raw-wdpa
+        unzip -o build/raw-wdpa/WDPA_{params.year}-shapefile0.zip -d build/raw-wdpa/WDPA_to_merge_0
+        unzip -o build/raw-wdpa/WDPA_{params.year}-shapefile1.zip -d build/raw-wdpa/WDPA_to_merge_0
+        unzip -o build/raw-wdpa/WDPA_{params.year}-shapefile2.zip -d build/raw-wdpa/WDPA_to_merge_0
+        ogrmerge.py -single -o {output.polygons} build/raw-wdpa/WDPA_to_merge_**/*-polygons.shp
+        ogrmerge.py -single -o {output.polygons} build/raw-wdpa/WDPA_to_merge_**/*-points.shp
+        exitcode=$?
+        if [ $exitcode -eq 1 ]
+        then
+            exit 1
+        else
+            exit 0
+        fi
+        """
 
 
 rule raw_srtm_elevation_tile_zipped:

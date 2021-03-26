@@ -9,3 +9,7 @@ properties:
                 enum: [2006, 2010, 2013, 2016, 2021]
                 default: 2016
                 description: Indicates the reference NUTS year
+            wdpa-date:
+                type: string
+                enum: [Mar2021, Apr2021]
+                descriptions: Indicates the latest Protected Planet WDPA year. Only the two latest datasets are available for download at any given time.
