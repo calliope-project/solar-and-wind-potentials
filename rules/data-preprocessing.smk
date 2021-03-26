@@ -152,21 +152,15 @@ rule raw_protected_areas:
     conda: "../envs/default.yaml"
     shell:
         """
-        set +e
         unzip {input} *.zip -d build/raw-wdpa-temp
         unzip -o build/raw-wdpa-temp/WDPA_{params.version}_Public_shp_0.zip -d build/raw-wdpa-temp/WDPA_to_merge_0
         unzip -o build/raw-wdpa-temp/WDPA_{params.version}_Public_shp_1.zip -d build/raw-wdpa-temp/WDPA_to_merge_1
         unzip -o build/raw-wdpa-temp/WDPA_{params.version}_Public_shp_2.zip -d build/raw-wdpa-temp/WDPA_to_merge_2
+        set +e
         ogrmerge.py -single -o {output.polygons} build/raw-wdpa-temp/WDPA_to_merge_**/*-polygons.shp
         ogrmerge.py -single -o {output.points} build/raw-wdpa-temp/WDPA_to_merge_**/*-points.shp
+        set -e
         rm -r build/raw-wdpa-temp/
-        exitcode=$?
-        if [ $exitcode -eq 1 ]
-        then
-            exit 1
-        else
-            exit 0
-        fi
         """
 
 
