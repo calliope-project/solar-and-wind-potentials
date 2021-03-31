@@ -4,8 +4,8 @@ import shapely.geometry
 import shapely.errors
 import pycountry
 
-from conversion import eu_country_code_to_iso3
-from utils import Config, buffer_if_necessary
+from src.conversion import eu_country_code_to_iso3
+from src.utils import Config, buffer_if_necessary
 
 OUTPUT_DRIVER = 'GPKG'
 SCHEMA = {
@@ -115,18 +115,22 @@ def _drop_geoms_completely_outside_study_area(gdf, config):
     return gdf
 
 def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
+    gdf = gdf.copy()
     study_area = _study_area(config)
     all_geoms = gdf.explode()
-    partially_in = all_geoms.within(study_area)
-    partially_out = ~partially_in.groupby(level=0).min()
-    for row_index, row in gdf.loc[partially_out].iterrows():
+    geoms_within_study_area = all_geoms.within(study_area)
+    geoms_partially_out = ~geoms_within_study_area.all(level=0)
+
+    # work only with geoms which have some polygons within the study area and some out
+    geoms_to_update = geoms_within_study_area.mul(geoms_partially_out, level=0)
+    for row_index, row in gdf.loc[geoms_to_update.any(level=0)].iterrows():
         print(
             "Removing parts of {} ({}, country={}) as they are outside of study area."
             .format(*row[["name", "level", "country_code"]])
         )
     # Unlike groupby, dissolve can only operate on columns, not multiindex levels
-    new_geoms = all_geoms[partially_in.mul(partially_out, level=0)].reset_index().dissolve('level_0')
-    gdf.update(new_geoms.geometry.map(_to_multi_polygon).to_frame('geometry'))
+    new_geoms = all_geoms[geoms_to_update].reset_index().dissolve('level_0')
+    gdf.loc[new_geoms.index, 'geometry'] = new_geoms.geometry.map(_to_multi_polygon)
 
     return gdf
 
