@@ -112,6 +112,7 @@ class TestGeomManipulation():
         polys = europe_gdf.geometry.map(_to_multi_polygon)
 
         assert all([isinstance(i, shapely.geometry.MultiPolygon) for i in polys])
+        assert all(polys.area == europe_gdf.area)
 
     def test_drop_countries(self, europe_gdf):
         config = {

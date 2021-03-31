@@ -114,6 +114,7 @@ def _drop_geoms_completely_outside_study_area(gdf, config):
 
     return gdf
 
+
 def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
     gdf = gdf.copy()
     study_area = _study_area(config)
@@ -123,6 +124,9 @@ def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
 
     # work only with geoms which have some polygons within the study area and some out
     geoms_to_update = geoms_within_study_area.mul(geoms_partially_out, level=0)
+    if gdf.loc[geoms_to_update.any(level=0)].empty:
+        return gdf
+
     for row_index, row in gdf.loc[geoms_to_update.any(level=0)].iterrows():
         print(
             "Removing parts of {} ({}, country={}) as they are outside of study area."
