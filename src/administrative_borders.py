@@ -133,8 +133,16 @@ def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
             .format(*row[["name", "level", "country_code"]])
         )
     # Unlike groupby, dissolve can only operate on columns, not multiindex levels
-    new_geoms = all_geoms[geoms_to_update].reset_index().dissolve('level_0')
-    gdf.loc[new_geoms.index, 'geometry'] = new_geoms.geometry.map(_to_multi_polygon)
+
+    new_geoms = (
+        all_geoms[geoms_to_update]
+        .geometry
+        .map(buffer_if_necessary)
+        .groupby(level=0)
+        .apply(lambda x: x.unary_union)
+        .map(_to_multi_polygon)
+    )
+    gdf.loc[new_geoms.index, 'geometry'] = new_geoms
 
     return gdf
 

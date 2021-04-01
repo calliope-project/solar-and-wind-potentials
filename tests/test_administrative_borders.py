@@ -93,9 +93,7 @@ class TestGeomManipulation():
         "Removing France (nuts0, country=FRA) as they are outside of study area",
     ]
     PARTIAL_DROPPED = [
-        "Removing parts of Shetland Islands (nuts3, country=GBR)",
         "Removing parts of Highlands and Islands (nuts2, country=GBR)",
-        "Removing parts of SCOTLAND (nuts1, country=GBR)",
         "Removing parts of United Kingdom (nuts0, country=GBR)",
     ]
 
@@ -148,8 +146,8 @@ class TestGeomManipulation():
         for i in self.PARTIAL_DROPPED:
             assert i in out
         assert (
-            europe_gdf[europe_gdf.name == 'Shetland Islands'].area
-            > gdf[gdf.name == 'Shetland Islands'].area
+            europe_gdf[europe_gdf.name == 'Highlands and Islands'].area
+            > gdf[gdf.name == 'Highlands and Islands'].area
         ).all()
 
 class TestFinalBorders():
