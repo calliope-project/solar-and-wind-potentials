@@ -56,10 +56,7 @@ rule all_gadm_administrative_borders:
     output: temp("build/raw-gadm/gadm36.gpkg")
     params: crs = config["crs"]
     conda: '../envs/default.yaml'
-    shell:
-        """
-        ogrmerge.py -o {output} -f gpkg -src_layer_field_content "{{LAYER_NAME}}" -t_srs {params.crs} -single {input}
-        """
+    shell: "ogrmerge.py -o {output} -f gpkg -src_layer_field_content "{{LAYER_NAME}}" -t_srs {params.crs} -single {input}"
 
 
 rule raw_nuts_units:

@@ -103,6 +103,6 @@ def buffer_if_necessary(shape):
 
     new_shape = shape.buffer(0.0)
     assert new_shape.is_valid
-    assert np.isclose(new_shape.area, new_shape.area)
+    assert np.isclose(new_shape.area, shape.area)
 
     return new_shape

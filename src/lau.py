@@ -27,11 +27,11 @@ def merge(path_to_shapes, path_to_attributes, path_to_output):
     attributes = pd.DataFrame(attributes) # to be able to remove the geo information
     del attributes["geometry"]
     all_shapes = shapes.merge(attributes, on="COMM_ID", how="left")
-    all_shapes_no_kosovo = _identify(all_shapes)
+    all_shapes_no_kosovo = _remove_kosovo(all_shapes)
     all_shapes_no_kosovo.to_file(path_to_output, driver=OUTPUT_DRIVER)
 
 
-def _identify(shapes):
+def _remove_kosovo(shapes):
     """Identify and remove municipalities in Kosovo.
 
     Those municipalities must be removed as we do not have load data and pycountry
