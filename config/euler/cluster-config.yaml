@@ -18,8 +18,6 @@ elevation_in_europe:
     cores: 4
 eez_eligibility:
     cores: 4
-shared_coast:
-    cores: 4
 sensitivities:
     cores: 4
 capacityfactor_timeseries:
@@ -29,5 +27,5 @@ time_average_capacityfactor_map:
     memory: 32000
 national_boundaries:
     runtime: 60
-administrative_borders_lau:
-    runtime: 60
+administrative_borders:
+    runtime: 240
