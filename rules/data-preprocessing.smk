@@ -2,7 +2,7 @@
 import pycountry
 
 URL_LOAD = "https://data.open-power-system-data.org/time_series/2018-06-30/time_series_60min_stacked.csv"
-URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/shp/NUTS_RG_01M_{}_4326.shp.zip"
+URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_{}_4326.geojson"
 URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip"
 URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
 URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
@@ -28,7 +28,7 @@ GMTED_Y = ["50N", "70N"]
 GMTED_X = ["030W", "000E", "030E"]
 
 localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
-    raw_nuts_units_zipped, raw_lau_units_zipped, raw_land_cover_zipped,
+    raw_lau_units_zipped, raw_land_cover_zipped,
     raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
     raw_bathymetry_zipped, raw_bathymetry, raw_gadm_administrative_borders
 
@@ -42,53 +42,31 @@ rule raw_gadm_administrative_borders_zipped:
 rule raw_gadm_administrative_borders:
     message: "Unzip administrative borders of {wildcards.country_code} as zip."
     input: "data/automatic/raw-gadm/{country_code}.zip"
-    output: temp("data/automatic/raw-gadm/gadm36_{country_code}.gpkg")
-    shell: "unzip -o {input} -d data/automatic/raw-gadm"
+    output: temp("build/raw-gadm/gadm36_{country_code}.gpkg")
+    shell: "unzip -o {input} -d build/raw-gadm"
 
 
-rule administrative_borders_gadm:
-    message: "Merge administrative borders of all countries up to layer {params.max_layer_depth}."
+rule all_gadm_administrative_borders:
+    message: "Merge gadm administrative borders of all countries."
     input:
-        "src/gadm.py",
-        ["data/automatic/raw-gadm/gadm36_{}.gpkg".format(country_code)
+        ["build/raw-gadm/gadm36_{}.gpkg".format(country_code)
             for country_code in [pycountry.countries.lookup(country).alpha_3
                                  for country in config['scope']['countries']]
          ]
-    params: max_layer_depth = 3
-    output: "build/administrative-borders-gadm.gpkg"
-    conda: "../envs/default.yaml"
-    shell:
-        PYTHON + " {input} {params.max_layer_depth} {output} {CONFIG_FILE}"
+    output: temp("build/raw-gadm/gadm36.gpkg")
+    params: crs = config["crs"]
+    conda: '../envs/default.yaml'
+    shell: "ogrmerge.py -o {output} -f gpkg -src_layer_field_content "{{LAYER_NAME}}" -t_srs {params.crs} -single {input}"
 
 
-rule raw_nuts_units_zipped:
-    message: "Download units as zip."
+rule raw_nuts_units:
+    message: "Download NUTS units as GeoJSON."
     output:
-        protected("data/automatic/raw-nuts{}-units.zip".format(config["parameters"]["nuts-year"]))
+        protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
     params:
         url = URL_NUTS.format(config["parameters"]["nuts-year"])
     shell:
         "curl -sLo {output} '{params.url}'"
-
-
-rule administrative_borders_nuts:
-    message: "Normalise NUTS administrative borders."
-    input:
-        src = "src/nuts.py",
-        zip = rules.raw_nuts_units_zipped.output
-    output:
-        "build/administrative-borders-nuts.gpkg"
-    shadow: "full"
-    params:
-        year = config['parameters']['nuts-year']
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        unzip {input.zip} -d ./build/NUTS_RG_01M_{params.year}_4326/
-        {PYTHON} {input.src} to_multipolygon \
-        ./build/NUTS_RG_01M_{params.year}_4326 ./build/raw-nuts.gpkg
-        {PYTHON} {input.src} normalise ./build/raw-nuts.gpkg {output} {CONFIG_FILE}
-        """
 
 
 rule raw_lau_units_zipped:
@@ -105,7 +83,7 @@ rule administrative_borders_lau:
         src = "src/lau.py",
         zip = rules.raw_lau_units_zipped.output
     output:
-        "build/administrative-borders-lau.geojson"
+        temp("build/raw-lau.gpkg")
     shadow: "full"
     conda: "../envs/default.yaml"
     shell:
@@ -113,9 +91,21 @@ rule administrative_borders_lau:
         unzip {input.zip} -d ./build
         {PYTHON} {input.src} merge ./build/COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp \
         ./build/COMM_01M_2013_SH/data/COMM_AT_2013.dbf ./build/raw-lau.gpkg
-        {PYTHON} {input.src} identify ./build/raw-lau.gpkg ./build/raw-lau-identified.gpkg
-        {PYTHON} {input.src} normalise ./build/raw-lau-identified.gpkg {output} {CONFIG_FILE}
         """
+
+
+rule administrative_borders:
+    message: "Normalise all administrative borders."
+    input:
+        src = "src/administrative_borders.py",
+        nuts_geojson = rules.raw_nuts_units.output,
+        gadm_gpkg = rules.all_gadm_administrative_borders.output,
+        lau_gpkg = rules.administrative_borders_lau.output
+    output:
+        "build/administrative-borders.gpkg"
+    shadow: "full"
+    conda: "../envs/default.yaml"
+    shell: "{PYTHON} {input.src} {input.nuts_geojson} {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}"
 
 
 rule raw_land_cover_zipped:

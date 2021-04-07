@@ -98,7 +98,11 @@ def buffer_if_necessary(shape):
     Following the advice given here:
     https://github.com/Toblerity/Shapely/issues/344
     """
-    if not shape.is_valid:
-        shape = shape.buffer(0.0)
-    assert shape.is_valid
-    return shape
+    if shape.is_valid:
+        return shape
+
+    new_shape = shape.buffer(0.0)
+    assert new_shape.is_valid
+    assert np.isclose(new_shape.area, shape.area, rtol=1e-5)
+
+    return new_shape

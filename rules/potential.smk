@@ -30,7 +30,7 @@ rule total_size_swiss_building_footprints_according_to_settlement_data:
         src = "src/swiss_building_footprints.py",
         building_footprints = rules.settlements.output.buildings,
         eligibility = "build/technically-eligible-land.tif",
-        countries = rules.administrative_borders_nuts.output[0]
+        countries = rules.administrative_borders.output
     output:
         "build/building-footprints-according-to-settlement-data-km2.txt"
     conda: "../envs/default.yaml"
@@ -124,9 +124,7 @@ rule units:
     message: "Form units of layer {wildcards.layer} by remixing NUTS, LAU, and GADM."
     input:
         "src/units.py",
-        rules.administrative_borders_nuts.output,
-        rules.administrative_borders_lau.output,
-        rules.administrative_borders_gadm.output
+        rules.administrative_borders.output,
     output:
         "build/{layer}/units.geojson"
     conda: "../envs/default.yaml"

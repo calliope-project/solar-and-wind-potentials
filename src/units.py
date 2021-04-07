@@ -1,8 +1,6 @@
-"""Remixes NUTS, LAU, and GADM data to form the units of the analysis."""
 import click
 import pandas as pd
 import geopandas as gpd
-import fiona
 import pycountry
 
 from utils import Config
@@ -11,15 +9,13 @@ DRIVER = "GeoJSON"
 
 
 @click.command()
-@click.argument("path_to_nuts")
-@click.argument("path_to_lau2")
-@click.argument("path_to_gadm")
+@click.argument("path_to_borders")
 @click.argument("path_to_output")
 @click.argument("layer_name")
 @click.argument("config", type=Config())
-def remix_units(path_to_nuts, path_to_lau2, path_to_gadm, path_to_output, layer_name, config):
+def remix_units(path_to_borders, path_to_output, layer_name, config):
     """Remixes NUTS, LAU, and GADM data to form the units of the analysis."""
-    source_layers = _read_source_layers(path_to_nuts, path_to_lau2, path_to_gadm)
+    source_layers = _read_source_layers(path_to_borders, config["layers"][layer_name])
     _validate_source_layers(source_layers)
     _validate_layer_config(config, layer_name)
     layer = _build_layer(config["layers"][layer_name], source_layers)
@@ -29,16 +25,11 @@ def remix_units(path_to_nuts, path_to_lau2, path_to_gadm, path_to_output, layer_
     _write_layer(layer, path_to_output)
 
 
-def _read_source_layers(path_to_nuts, path_to_lau2, path_to_gadm):
+def _read_source_layers(path_to_borders, layers):
     source_layers = {
-        layer_name: gpd.read_file(path_to_nuts, layer=layer_name)
-        for layer_name in fiona.listlayers(path_to_nuts)
+        layer_name: gpd.read_file(path_to_borders, layer=layer_name)
+        for layer_name in set(layers.values())
     }
-    source_layers["lau2"] = gpd.read_file(path_to_lau2)
-    source_layers.update({
-        layer_name: gpd.read_file(path_to_gadm, layer=layer_name)
-        for layer_name in fiona.listlayers(path_to_gadm)
-    })
     return source_layers
 
 
