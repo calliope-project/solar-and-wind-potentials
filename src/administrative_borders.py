@@ -94,28 +94,30 @@ def _update_features(gdf, src):
     return gdf
 
 
-def _drop_countries(gdf, config):
+def _drop_countries(gdf, config, print_dropped=True):
     countries = [pycountry.countries.lookup(i).alpha_3 for i in config["scope"]["countries"]]
     _not_in = set(gdf.country_code).difference(countries)
-    print(f"Removing {_not_in} as they are outside of study area.")
+    if print_dropped:
+        print(f"Removing {_not_in} as they are outside of study area.")
 
     return gdf[gdf.country_code.isin(countries)]
 
 
-def _drop_geoms_completely_outside_study_area(gdf, config):
+def _drop_geoms_completely_outside_study_area(gdf, config, print_dropped=True):
     study_area = _study_area(config)
     completely_in = gdf.intersects(study_area)
-    for row_index, row in gdf[~completely_in].iterrows():
-        print(
-            "Removing {} ({}, country={}) as they are outside of study area."
-            .format(*row[["name", "level", "country_code"]])
-        )
+    if print_dropped:
+        for row_index, row in gdf[~completely_in].iterrows():
+            print(
+                "Removing {} ({}, country={}) as they are outside of study area."
+                .format(*row[["name", "level", "country_code"]])
+            )
     gdf = gdf[completely_in]
 
     return gdf
 
 
-def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
+def _drop_parts_of_geoms_completely_outside_study_area(gdf, config, print_dropped=True):
     gdf = gdf.copy()
     study_area = _study_area(config)
     all_geoms = gdf.explode()
@@ -126,13 +128,12 @@ def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
     geoms_to_update = geoms_within_study_area.mul(geoms_partially_out, level=0)
     if gdf.loc[geoms_to_update.any(level=0)].empty:
         return gdf
-
-    for row_index, row in gdf.loc[geoms_to_update.any(level=0)].iterrows():
-        print(
-            "Removing parts of {} ({}, country={}) as they are outside of study area."
-            .format(*row[["name", "level", "country_code"]])
-        )
-    # Unlike groupby, dissolve can only operate on columns, not multiindex levels
+    if print_dropped:
+        for row_index, row in gdf.loc[geoms_to_update.any(level=0)].iterrows():
+            print(
+                "Removing parts of {} ({}, country={}) as they are outside of study area."
+                .format(*row[["name", "level", "country_code"]])
+            )
 
     new_geoms = (
         all_geoms[geoms_to_update]
