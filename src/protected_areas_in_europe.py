@@ -7,9 +7,10 @@ import geopandas as gpd
 
 from src.utils import Config
 
-from src.administrative_borders import _to_multi_polygon, _study_area, _drop_countries, _drop_geoms_completely_outside_study_area, _drop_parts_of_geoms_completely_outside_study_area
+from src.administrative_borders import _to_multi_polygon, _drop_countries, _drop_geoms_completely_outside_study_area
 
 OUTPUT_DRIVER = "GeoJSON"
+
 
 @click.command()
 @click.argument("path_to_shape_dir")
@@ -80,9 +81,6 @@ def _estimate_polygons_from_points(points):
     ]
     __test_area_size(points_in_metres)
     return points_in_metres.to_crs(original_crs)
-
-
-
 
 
 if __name__ == "__main__":
