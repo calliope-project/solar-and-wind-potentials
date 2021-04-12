@@ -4,11 +4,8 @@ In here, we only exclude areas based on technical restrictions.
 """
 from enum import IntEnum
 
-import click
 import numpy as np
 import rasterio
-
-from src.utils import Config
 
 DATATYPE = np.uint8
 
@@ -86,17 +83,9 @@ URBAN = [GlobCover.ARTIFICAL_SURFACES_AND_URBAN_AREAS]
 WATER = [GlobCover.WATER_BODIES]
 
 
-@click.command()
-@click.argument("path_to_land_cover")
-@click.argument("path_to_slope")
-@click.argument("path_to_bathymetry")
-@click.argument("path_to_building_share")
-@click.argument("path_to_urban_green_share")
-@click.argument("path_to_result")
-@click.argument("config", type=Config())
 def determine_eligibility(path_to_land_cover, path_to_slope,
                           path_to_bathymetry, path_to_building_share, path_to_urban_green_share,
-                          path_to_result, config):
+                          path_to_result, max_slope, max_building_share, max_urban_green_share):
     """Determines eligibility of land for renewables."""
     with rasterio.open(path_to_land_cover) as src:
         transform = src.transform
@@ -116,7 +105,9 @@ def determine_eligibility(path_to_land_cover, path_to_slope,
         bathymetry=bathymetry,
         building_share=building_share,
         urban_green_share=urban_green_share,
-        config=config
+        max_slope=max_slope,
+        max_building_share=max_building_share,
+        max_urban_green_share=max_urban_green_share,
     )
     with rasterio.open(path_to_result, 'w', driver='GTiff', height=eligibility.shape[0],
                        width=eligibility.shape[1], count=1, dtype=DATATYPE,
@@ -124,12 +115,12 @@ def determine_eligibility(path_to_land_cover, path_to_slope,
         new_geotiff.write(eligibility, 1)
 
 
-def _determine_eligibility(land_cover, slope, bathymetry, building_share, urban_green_share, config):
+def _determine_eligibility(
+    land_cover, slope, bathymetry, building_share, urban_green_share, max_slope, max_building_share, max_urban_green_share
+):
     # parameters
-    max_slope_pv = config["parameters"]["max-slope"]["pv"]
-    max_slope_wind = config["parameters"]["max-slope"]["wind"]
-    max_building_share = config["parameters"]["max-building-share"]
-    max_urban_green_share = config["parameters"]["max-urban-green-share"]
+    max_slope_pv = max_slope["pv"]
+    max_slope_wind = max_slope["wind"]
     assert max_slope_pv <= max_slope_wind # wind can be built whereever pv can be built
 
     # prepare masks
@@ -157,4 +148,14 @@ def _add_eligibility(land, eligibility, mask):
 
 
 if __name__ == "__main__":
-    determine_eligibility()
+    determine_eligibility(
+        path_to_land_cover=snakemake.input.land_cover,
+        path_to_slope=snakemake.input.slope,
+        path_to_bathymetry=snakemake.input.bathymetry,
+        path_to_building_share=snakemake.input.building_share,
+        path_to_urban_green_share=snakemake.input.urban_green_share,
+        max_slope=snakemake.params.max_slope,
+        max_building_share=snakemake.params.max_building_share,
+        max_urban_green_share=snakemake.params.max_urban_green_share,
+        path_to_result=snakemake.output[0]
+    )

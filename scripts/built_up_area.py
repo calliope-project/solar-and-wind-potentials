@@ -1,5 +1,4 @@
 """Determine the built up area in administrative units."""
-import click
 import fiona
 import rasterio
 from rasterstats import zonal_stats
@@ -8,10 +7,6 @@ import pandas as pd
 from src.utils import determine_pixel_areas
 
 
-@click.command()
-@click.argument("path_to_built_up_share")
-@click.argument("path_to_units")
-@click.argument("path_to_result")
 def built_up_areas(path_to_built_up_share, path_to_units, path_to_result):
     """Determine the built up area in administrative units."""
     with rasterio.open(path_to_built_up_share) as src:
@@ -54,4 +49,8 @@ def _stats(unit_geometries, raster_area, transform):
 
 
 if __name__ == "__main__":
-    built_up_areas()
+    built_up_areas(
+        path_to_built_up_share=snakemake.input.built_up_area,
+        path_to_units=snakemake.input.units,
+        path_to_result=snakemake.output[0]
+    )

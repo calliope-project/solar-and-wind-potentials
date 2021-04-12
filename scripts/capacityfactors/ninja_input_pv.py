@@ -1,31 +1,24 @@
 """Create PV simulation input for renewables.ninja."""
-import click
 import pandas as pd
 import geopandas as gpd
 
-from src.utils import Config
 from src.capacityfactors import point_raster_on_shapes
 
 
-@click.command()
-@click.argument("path_to_shapes_of_land_surface")
-@click.argument("path_to_roof_categories")
-@click.argument("path_to_output")
-@click.argument("config", type=Config())
-def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_categories, path_to_output,
-                             config):
+def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_categories,
+                             bounds, ninja, maximum_power_density, path_to_output):
     """Create PV simulation input for renewables.ninja."""
     points = point_raster_on_shapes(
-        bounds_wgs84=config["scope"]["bounds"],
+        bounds_wgs84=bounds,
         shapes=gpd.read_file(path_to_shapes_of_land_surface),
-        resolution_km2=config["parameters"]["ninja"]["resolution-grid"]
+        resolution_km2=ninja["resolution-grid"]
     )
 
     roof_categories = pd.read_csv(path_to_roof_categories, index_col=[0, 1])
     roof_categories = area_to_capacity(
         roof_categories,
-        power_density_flat=config["parameters"]["maximum-installable-power-density"]["pv-on-flat-areas"],
-        power_density_tilted=config["parameters"]["maximum-installable-power-density"]["pv-on-tilted-roofs"]
+        power_density_flat=maximum_power_density["pv-on-flat-areas"],
+        power_density_tilted=maximum_power_density["pv-on-tilted-roofs"]
     ).reset_index()
     lat_long = pd.DataFrame(
         data={
@@ -48,7 +41,7 @@ def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_catego
     )
     flat_mask = data["orientation"] == "flat"
     data.loc[flat_mask, "average_tilt"] = data.loc[flat_mask, "lat"].map(optimal_tilt)
-    data["pr"] = config["parameters"]["ninja"]["pv-performance-ratio"]
+    data["pr"] = ninja["pv-performance-ratio"]
     data[
         ["sim_id", "weight", "site_id", "lat", "long", "average_tilt",
          "orientation", "azim", "pr"]
@@ -106,4 +99,11 @@ def area_to_capacity(statistical_roof_model_area_based, power_density_flat, powe
 
 
 if __name__ == "__main__":
-    pv_simulation_parameters()
+    pv_simulation_parameters(
+        path_to_shapes_of_land_surface=snakemake.input.units,
+        path_to_roof_categories=snakemake.input.roof_categories,
+        bounds=snakemake.params.bounds,
+        ninja=snakemake.params.ninja,
+        maximum_power_density=snakemake.params.maximum_power_density,
+        path_to_output=snakemake.output.points
+    )

@@ -3,7 +3,6 @@ from textwrap import dedent
 from multiprocessing import Pool
 from itertools import cycle
 
-import click
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -14,11 +13,6 @@ import utils
 DRIVER = "GeoJSON"
 
 
-@click.command()
-@click.argument("path_to_units")
-@click.argument("path_to_eezs")
-@click.argument("path_to_output")
-@click.argument("threads", type=click.INT)
 def allocate_eezs(path_to_units, path_to_eezs, path_to_output, threads):
     """Determine share of shared coast between eez and administrative units."""
     units = gpd.read_file(path_to_units)
@@ -72,4 +66,9 @@ def _share_of_coast_length(args):
 
 
 if __name__ == "__main__":
-    allocate_eezs()
+    allocate_eezs(
+        path_to_units=snakemake.input.units,
+        path_to_eezs=snakemake.input.eez,
+        path_to_output=snakemake.output[0],
+        threads=snakemake.input.threads[0]
+    )

@@ -1,5 +1,4 @@
 """Create index capacity factor timeseries of renewables."""
-import click
 import xarray as xr
 
 SIM_ID_DIMENSION = "site"
@@ -14,9 +13,6 @@ FLAT_SURFACE = "flat"
 FILE_SUFFIX = "nc"
 
 
-@click.command()
-@click.argument("path_to_input")
-@click.argument("path_to_output")
 def timeseries(path_to_input, path_to_output):
     """Create index capacity factor timeseries of renewables from separate renewables.ninja runs."""
     ds = xr.open_dataset(path_to_input)
@@ -44,4 +40,7 @@ def weigh_capacity_factors(ds):
 
 
 if __name__ == "__main__":
-    timeseries()
+    timeseries(
+        path_to_input=snakemake.input.capacityfactor,
+        path_to_output=snakemake.output[0]
+    )

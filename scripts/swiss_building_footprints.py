@@ -1,5 +1,4 @@
 """Determine total Swiss building footprint of ESM data."""
-import click
 import rasterio
 import fiona
 from rasterstats import zonal_stats
@@ -10,11 +9,6 @@ from src.technical_eligibility import Eligibility
 from src.conversion import area_in_squaremeters
 
 
-@click.command()
-@click.argument("path_to_building_footprint")
-@click.argument("path_to_eligibility")
-@click.argument("path_to_countries")
-@click.argument("path_to_output")
 def swiss_building_footprint(path_to_building_footprint, path_to_eligibility,
                              path_to_countries, path_to_output):
     with rasterio.open(path_to_eligibility, "r") as f_eligibility:
@@ -47,4 +41,9 @@ def swiss_building_footprint(path_to_building_footprint, path_to_eligibility,
 
 
 if __name__ == "__main__":
-    swiss_building_footprint()
+    swiss_building_footprint(
+        path_to_building_footprint=snakemake.input.building_footprints,
+        path_to_eligibility=snakemake.input.eligibility,
+        path_to_countries=snakemake.input.countries,
+        path_to_output=snakemake.output[0]
+    )

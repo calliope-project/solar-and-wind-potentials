@@ -1,8 +1,6 @@
 from snakemake.utils import validate
 
 PYTHON = "PYTHONPATH=./ python"
-PYTHON_SCRIPT = "PYTHONPATH=./ python {input} {output}"
-PYTHON_SCRIPT_WITH_CONFIG = PYTHON_SCRIPT + " {CONFIG_FILE}"
 
 CONFIG_FILE = "config/default.yaml"
 configfile: CONFIG_FILE
@@ -15,9 +13,12 @@ include: "rules/potential.smk"
 include: "rules/sync.smk"
 
 localrules: all, clean
+root_dir = config["root-directory"] + "/" if config["root-directory"] not in ["", "."] else ""
+__version__ = open(f"{root_dir}VERSION").readlines()[0].strip()
+script_dir = f"{root_dir}scripts/"
 
 wildcard_constraints:
-    layer = "({layer_list})".format(layer_list="|".join((f"({layer})" for layer in config["layers"]))),
+    layer = "({layer_list})".format(layer_list="|".join((f"({layer})" for layer in config["shapes"]))),
     scenario = "({scenario_list})".format(scenario_list="|".join((f"({scenario})" for scenario in config["scenarios"])))
 
 onstart:
@@ -37,17 +38,17 @@ rule all:
         expand(
             "build/{layer}/{scenario}/potentials.csv",
             scenario=config["scenarios"],
-            layer=config["layers"]
+            layer=config["shapes"]
         ),
         expand(
             "build/{layer}/{scenario}/capacities.csv",
             scenario=config["scenarios"],
-            layer=config["layers"]
+            layer=config["shapes"]
         ),
         expand(
             "build/{layer}/{scenario}/areas.csv",
             scenario=config["scenarios"],
-            layer=config["layers"]
+            layer=config["shapes"]
         )
 
 
@@ -62,7 +63,7 @@ rule clean: # removes all generated results
 rule test:
     message: "Run tests."
     input:
-        expand("build/{layer}/technical-potential/potentials.csv", layer=config["layers"]),
+        expand("build/{layer}/technical-potential/potentials.csv", layer=config["shapes"]),
         "build/technically-eligible-land.tif",
         "build/technically-eligible-area-km2.tif",
         "build/technically-eligible-electricity-yield-pv-prio-twh.tif",

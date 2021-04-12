@@ -1,25 +1,17 @@
-import click
 import pandas as pd
 import geopandas as gpd
 import pycountry
 
-from utils import Config
-
 DRIVER = "GeoJSON"
 
 
-@click.command()
-@click.argument("path_to_borders")
-@click.argument("path_to_output")
-@click.argument("layer_name")
-@click.argument("config", type=Config())
-def remix_units(path_to_borders, path_to_output, layer_name, config):
+def remix_units(path_to_borders, layer_name, layer_config, countries, path_to_output):
     """Remixes NUTS, LAU, and GADM data to form the units of the analysis."""
-    source_layers = _read_source_layers(path_to_borders, config["layers"][layer_name])
+    source_layers = _read_source_layers(path_to_borders, layer_config)
     _validate_source_layers(source_layers)
-    _validate_layer_config(config, layer_name)
-    layer = _build_layer(config["layers"][layer_name], source_layers)
-    _validate_layer(layer, layer_name, config["scope"]["countries"])
+    _validate_layer_config(layer_config, layer_name, countries)
+    layer = _build_layer(layer_config, source_layers)
+    _validate_layer(layer_config, layer_name, countries)
     if layer_name == "continental": # treat special case
         layer = _continental_layer(layer)
     _write_layer(layer, path_to_output)
@@ -38,10 +30,8 @@ def _validate_source_layers(source_layers):
     assert not crs or crs.count(crs[0]) == len(crs), "Source layers have different crs. They must match."
 
 
-def _validate_layer_config(config, layer_name):
-    country_scope = config["scope"]["countries"]
-    layer = config["layers"][layer_name]
-    assert all(country in layer.keys() for country in country_scope), ("Layer {} is not correctly "
+def _validate_layer_config(layer_config, layer_name, countries):
+    assert all(country in layer_config.keys() for country in countries), ("Layer {} is not correctly "
                                                                        "defined.".format(layer_name))
 
 
@@ -84,4 +74,10 @@ def _write_layer(gdf, path_to_file):
 
 
 if __name__ == "__main__":
-    remix_units()
+    remix_units(
+        administrative_borders=snakemake.input.administrative_borders,
+        layer_name=snakemake.params.layer_name,
+        layer_config=snakemake.params.layer_config,
+        countries=snakemake.params.countries,
+        path_to_output=snakemake.output[0]
+    )

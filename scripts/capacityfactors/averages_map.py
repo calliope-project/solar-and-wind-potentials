@@ -1,5 +1,4 @@
 """Create maps of time averaged capacitfy factors of renewables."""
-import click
 import numpy as np
 import rasterio
 import xarray as xr
@@ -10,10 +9,6 @@ DTYPE = np.float32
 NODATA = -1
 
 
-@click.command()
-@click.argument("path_to_id_map")
-@click.argument("path_to_timeseries")
-@click.argument("path_to_output")
 def averages_map(path_to_id_map, path_to_timeseries, path_to_output):
     """Create maps of time averaged capacitfy factors of renewables."""
     with rasterio.open(path_to_id_map, "r") as f_ids:
@@ -39,4 +34,8 @@ def map_id_to_average_capacity_factor(ids, path_to_timeseries, nodata_id):
 
 
 if __name__ == "__main__":
-    averages_map()
+    averages_map(
+        path_to_id_map=snakemake.input.id_map,
+        path_to_timeseries=snakemake.input.timeseries,
+        path_to_output=snakemake.input.output[0]
+    )

@@ -1,5 +1,4 @@
 """Determines area of technically eligible land for renewables."""
-import click
 import numpy as np
 import rasterio
 
@@ -9,11 +8,6 @@ from src.technical_eligibility import Eligibility
 DATATYPE = np.float32
 
 
-@click.command()
-@click.argument("path_to_eligibility_categories")
-@click.argument("path_to_building_share")
-@click.argument("path_to_rooftop_correction_factor")
-@click.argument("path_to_result")
 def determine_area(path_to_eligibility_categories, path_to_building_share,
                    path_to_rooftop_correction_factor, path_to_result):
     """Determines area of technically eligible land for renewables.
@@ -51,4 +45,9 @@ def write_to_file(areas_of_eligibility, path_to_result, meta):
 
 
 if __name__ == "__main__":
-    determine_area()
+    determine_area(
+        path_to_eligibility_categories=snakemake.input.eligibility_categories,
+        path_to_building_share=snakemake.input.building_share,
+        path_to_rooftop_correction_factor=snakemake.input.rooftop_correction_factor,
+        path_to_result=snakemake.output[0]
+    )

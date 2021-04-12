@@ -1,11 +1,10 @@
-import click
 import geopandas as gpd
 import shapely.geometry
 import shapely.errors
 import pycountry
 
 from src.conversion import eu_country_code_to_iso3
-from src.utils import Config, buffer_if_necessary
+from src.utils import buffer_if_necessary
 
 OUTPUT_DRIVER = 'GPKG'
 SCHEMA = {
@@ -20,13 +19,7 @@ SCHEMA = {
 }
 
 
-@click.command()
-@click.argument("path_to_nuts")
-@click.argument("path_to_gadm")
-@click.argument("path_to_lau")
-@click.argument("path_to_output")
-@click.argument("config", type=Config())
-def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, path_to_output, config):
+def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, crs, scope_config, path_to_output):
     """Normalises raw administrative boundary data and places it in one, layered geodatapackage."""
 
     #lau
@@ -34,12 +27,12 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, path_to_out
         'nuts': path_to_nuts, 'gadm': path_to_gadm, 'lau': path_to_lau
     }.items():
         gdf = gpd.read_file(_path)
-        gdf = gdf.to_crs(config["crs"])
+        gdf = gdf.to_crs(crs)
         gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(_to_multi_polygon)
         gdf = _update_features(gdf, _src)
-        gdf = _drop_countries(gdf, config)
-        gdf = _drop_geoms_completely_outside_study_area(gdf, config)
-        gdf = _drop_parts_of_geoms_completely_outside_study_area(gdf, config)
+        gdf = _drop_countries(gdf, scope_config)
+        gdf = _drop_geoms_completely_outside_study_area(gdf, scope_config)
+        gdf = _drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config)
 
         assert gdf.id.duplicated().sum() == 0
 
@@ -94,8 +87,8 @@ def _update_features(gdf, src):
     return gdf
 
 
-def _drop_countries(gdf, config):
-    countries = [pycountry.countries.lookup(i).alpha_3 for i in config["scope"]["countries"]]
+def _drop_countries(gdf, scope_config):
+    countries = [pycountry.countries.lookup(i).alpha_3 for i in scope_config["countries"]]
     _not_in = set(gdf.country_code).difference(countries)
     print(f"Removing {_not_in} as they are outside of study area.")
 
@@ -115,9 +108,9 @@ def _drop_geoms_completely_outside_study_area(gdf, config):
     return gdf
 
 
-def _drop_parts_of_geoms_completely_outside_study_area(gdf, config):
+def _drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config):
     gdf = gdf.copy()
-    study_area = _study_area(config)
+    study_area = _study_area(scope_config)
     all_geoms = gdf.explode()
     geoms_within_study_area = all_geoms.within(study_area)
     geoms_partially_out = ~geoms_within_study_area.all(level=0)
@@ -156,7 +149,7 @@ def _to_multi_polygon(geometry):
         return geometry
 
 
-def _study_area(config):
+def _study_area(scope_config):
     """
     Create a bounding box for the study area, and cut out holes for all defined
     exclusion zones. For plotting purposes, exclusion zones and the bounding box are
@@ -169,14 +162,14 @@ def _study_area(config):
             (exclusion_zone["x_min"], exclusion_zone["y_max"]),
             (exclusion_zone["x_min"], exclusion_zone["y_min"])
         )
-        for exclusion_zone in config["scope"].get("exclusion_zones", {}).values()
+        for exclusion_zone in scope_config.get("exclusion_zones", {}).values()
     ]
 
     study_area = shapely.geometry.Polygon(
-        ((config["scope"]["bounds"]["x_min"], config["scope"]["bounds"]["y_min"]),
-        (config["scope"]["bounds"]["x_min"], config["scope"]["bounds"]["y_max"]),
-        (config["scope"]["bounds"]["x_max"], config["scope"]["bounds"]["y_max"]),
-        (config["scope"]["bounds"]["x_max"], config["scope"]["bounds"]["y_min"])),
+        ((scope_config["bounds"]["x_min"], scope_config["bounds"]["y_min"]),
+        (scope_config["bounds"]["x_min"], scope_config["bounds"]["y_max"]),
+        (scope_config["bounds"]["x_max"], scope_config["bounds"]["y_max"]),
+        (scope_config["bounds"]["x_max"], scope_config["bounds"]["y_min"])),
         holes=holes
     )
     study_area = buffer_if_necessary(study_area)
@@ -185,4 +178,11 @@ def _study_area(config):
 
 
 if __name__ == "__main__":
-    normalise_admin_borders()
+    normalise_admin_borders(
+        path_to_nuts=snakemake.input.nuts_geojson,
+        path_to_gadm=snakemake.input.gadm_gpkg,
+        path_to_lau=snakemake.input.lau_gpkg,
+        crs=snakemake.params.crs,
+        scope_config=snakemake.params.scope,
+        path_to_output=snakemake.output[0]
+    )

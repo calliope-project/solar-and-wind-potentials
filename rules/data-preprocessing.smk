@@ -1,21 +1,7 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
 
-URL_LOAD = "https://data.open-power-system-data.org/time_series/2018-06-30/time_series_60min_stacked.csv"
-URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_{}_4326.geojson"
-URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip"
-URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
-URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
-URL_PROTECTED_AREAS = "https://www.protectedplanet.net/downloads/WDPA_Feb2019?type=shapefile"
-URL_CGIAR_TILE = "http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/"
-URL_GMTED_TILE = "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED/075darcsec/mea/"
-URL_GADM = "https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/"
-URL_BATHYMETRIC = "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip"
-URL_POP = "http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_250/V1-0/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0.zip"
-
-
-RAW_SETTLEMENT_DATA = "data/esm-100m-2017/ESM_class{esm_class}_100m.tif"
-RAW_EEZ_DATA = "data/World_EEZ_v10_20180221/eez_v10.shp"
+PYTHON = "PYTHONPATH=./ python"
 
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
@@ -27,6 +13,9 @@ SRTM_Y_MAX = 8
 GMTED_Y = ["50N", "70N"]
 GMTED_X = ["030W", "000E", "030E"]
 
+root_dir = config["root-directory"] + "/" if config["root-directory"] not in ["", "."] else ""
+script_dir = f"{root_dir}scripts/"
+
 localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
     raw_lau_units_zipped, raw_land_cover_zipped,
     raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
@@ -35,15 +24,16 @@ localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
 
 rule raw_gadm_administrative_borders_zipped:
     message: "Download administrative borders for {wildcards.country_code} as zip."
+    params: url = lambda wildcards: config["data-sources"]["gadm"].format(country_code=wildcards.country_code)
     output: protected("data/automatic/raw-gadm/{country_code}.zip")
-    shell: "curl -sLo {output} '{URL_GADM}/gadm36_{wildcards.country_code}_gpkg.zip'"
+    shell: "curl -sLo {output} '{params.url}'"
 
 
 rule raw_gadm_administrative_borders:
     message: "Unzip administrative borders of {wildcards.country_code} as zip."
     input: "data/automatic/raw-gadm/{country_code}.zip"
     output: temp("build/raw-gadm/gadm36_{country_code}.gpkg")
-    shell: "unzip -o {input} -d build/raw-gadm"
+    shell: "unzip -o {input} -d data/automatic/raw-gadm"
 
 
 rule all_gadm_administrative_borders:
@@ -56,7 +46,7 @@ rule all_gadm_administrative_borders:
     output: temp("build/raw-gadm/gadm36.gpkg")
     params: crs = config["crs"]
     conda: '../envs/default.yaml'
-    shell: "ogrmerge.py -o {output} -f gpkg -src_layer_field_content "{{LAYER_NAME}}" -t_srs {params.crs} -single {input}"
+    shell: "ogrmerge.py -o {output} -f gpkg -src_layer_field_content '{{LAYER_NAME}}' -t_srs {params.crs} -single {input}"
 
 
 rule raw_nuts_units:
@@ -64,7 +54,7 @@ rule raw_nuts_units:
     output:
         protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
     params:
-        url = URL_NUTS.format(config["parameters"]["nuts-year"])
+        url = config["data-sources"]["nuts"].format(config["parameters"]["nuts-year"])
     shell:
         "curl -sLo {output} '{params.url}'"
 
@@ -73,14 +63,15 @@ rule raw_lau_units_zipped:
     message: "Download LAU units as zip."
     output:
         protected("data/automatic/raw-lau-units.zip")
+    params: url = config["data-sources"]["lau"]
     shell:
-        "curl -sLo {output} '{URL_LAU}'"
+        "curl -sLo {output} '{params.url}'"
 
 
 rule administrative_borders_lau:
     message: "Normalise LAU administrative borders."
     input:
-        src = "src/lau.py",
+        src = script_dir + "lau.py",
         zip = rules.raw_lau_units_zipped.output
     output:
         temp("build/raw-lau.gpkg")
@@ -97,21 +88,25 @@ rule administrative_borders_lau:
 rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
-        src = "src/administrative_borders.py",
+        src = script_dir + "administrative_borders.py",
         nuts_geojson = rules.raw_nuts_units.output,
         gadm_gpkg = rules.all_gadm_administrative_borders.output,
         lau_gpkg = rules.administrative_borders_lau.output
+    params:
+        crs = config["crs"],
+        scope = config["scope"]
     output:
         "build/administrative-borders.gpkg"
     shadow: "full"
     conda: "../envs/default.yaml"
-    shell: "{PYTHON} {input.src} {input.nuts_geojson} {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}"
+    script: "../scripts/administrative_borders.py"
 
 
 rule raw_land_cover_zipped:
     message: "Download land cover data as zip."
     output: protected("data/automatic/raw-globcover2009.zip")
-    shell: "curl -sLo {output} '{URL_LAND_COVER}'"
+    params: url = config["data-sources"]["land_cover"]
+    shell: "curl -sLo {output} '{url}'"
 
 
 rule raw_land_cover:
@@ -125,7 +120,8 @@ rule raw_land_cover:
 rule raw_protected_areas_zipped:
     message: "Download protected areas data as zip."
     output: protected("data/automatic/raw-wdpa.zip")
-    shell: "curl -sLo {output} -H 'Referer: {URL_PROTECTED_AREAS}' {URL_PROTECTED_AREAS}"
+    params: url = config["data-sources"]["protected_areas"]
+    shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
 rule raw_protected_areas:
@@ -142,9 +138,10 @@ rule raw_srtm_elevation_tile_zipped:
     message: "Download SRTM elevation data tile (x={wildcards.x}, y={wildcards.y}) from CGIAR."
     output:
         protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
+    params: url = config["data-sources"]["cgiar_tile"]
     shell:
         """
-        curl -sLo {output} '{URL_CGIAR_TILE}/srtm_{wildcards.x}_{wildcards.y}.zip'
+        curl -sLo {output} '{params.url}/srtm_{wildcards.x}_{wildcards.y}.zip'
         """
 
 
@@ -183,7 +180,7 @@ rule raw_gmted_elevation_tile:
         protected("data/automatic/raw-gmted/raw-gmted-{y}-{x}.tif")
     run:
         url = "{base_url}/{x_inverse}/{y}{x}_20101117_gmted_mea075.tif".format(**{
-            "base_url": URL_GMTED_TILE,
+            "base_url": config["data-sources"]["gmted_tile"],
             "x": wildcards.x,
             "y": wildcards.y,
             "x_inverse": wildcards.x[-1] + wildcards.x[:-1]
@@ -208,7 +205,8 @@ rule raw_gmted_elevation_data:
 rule raw_bathymetry_zipped:
     message: "Download bathymetric data as zip."
     output: protected("data/automatic/raw-bathymetric.zip")
-    shell: "curl -sLo {output} '{URL_BATHYMETRIC}'"
+    params: url = config["data-sources"]["bathymetric"]
+    shell: "curl -sLo {output} '{params.url}'"
 
 
 rule raw_bathymetry:
@@ -273,13 +271,14 @@ rule slope_in_europe:
 rule protected_areas_points_to_circles:
     message: "Estimate shape of protected areas available as points only."
     input:
-        "src/estimate_protected_shapes.py",
-        rules.raw_protected_areas.output.points
+        script_dir + "estimate_protected_shapes.py",
+        protected_areas= rules.raw_protected_areas.output.points
+    params:
+        scope = config["scope"]
     output:
         temp("build/protected-areas-points-as-circles.geojson")
     conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT_WITH_CONFIG
+    script: "../scripts/estimate_protected_shapes.py"
 
 
 rule protected_areas_in_europe:
@@ -311,12 +310,12 @@ rule protected_areas_in_europe:
 rule settlements:
     message: "Warp settlement data to CRS of study using {threads} threads."
     input:
-        class50 = RAW_SETTLEMENT_DATA.format(esm_class="50"),
-        class40 = RAW_SETTLEMENT_DATA.format(esm_class="40"),
-        class41 = RAW_SETTLEMENT_DATA.format(esm_class="41"),
-        class45 = RAW_SETTLEMENT_DATA.format(esm_class="45"),
-        class30 = RAW_SETTLEMENT_DATA.format(esm_class="30"),
-        class35 = RAW_SETTLEMENT_DATA.format(esm_class="35"),
+        class50 = config["data-sources"]["settlement_data"].format(esm_class="50"),
+        class40 = config["data-sources"]["settlement_data"].format(esm_class="40"),
+        class41 = config["data-sources"]["settlement_data"].format(esm_class="41"),
+        class45 = config["data-sources"]["settlement_data"].format(esm_class="45"),
+        class30 = config["data-sources"]["settlement_data"].format(esm_class="30"),
+        class35 = config["data-sources"]["settlement_data"].format(esm_class="35"),
         reference = rules.land_cover_in_europe.output
     output:
         buildings = "build/esm-class50-buildings.tif",
@@ -356,7 +355,7 @@ rule bathymetry_in_europe:
 
 rule eez_in_europe:
     message: "Clip exclusive economic zones to study area."
-    input: RAW_EEZ_DATA
+    input: config["data-sources"]["eez_data"]
     output: "build/eez-in-europe.geojson"
     params:
         bounds="{x_min},{y_min},{x_max},{y_max}".format(**config["scope"]["bounds"]),
