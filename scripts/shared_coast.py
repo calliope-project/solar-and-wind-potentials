@@ -15,11 +15,11 @@ DRIVER = "GeoJSON"
 
 def allocate_eezs(path_to_units, path_to_eezs, path_to_output, threads):
     """Determine share of shared coast between eez and administrative units."""
-    units = gpd.read_file(path_to_units)
+    units = gpd.read_file(str(path_to_units))
     units.set_index("id", inplace=True)
-    eezs = gpd.read_file(path_to_eezs)
+    eezs = gpd.read_file(str(path_to_eezs))
     eezs.geometry = eezs.geometry.map(utils.buffer_if_necessary)
-    with Pool(threads) as pool:
+    with Pool(int(threads)) as pool:
         share_of_coast_length = pool.map(
             _share_of_coast_length,
             zip((eez[1] for eez in eezs.iterrows()), cycle([units]))
@@ -32,7 +32,7 @@ def allocate_eezs(path_to_units, path_to_eezs, path_to_output, threads):
         ((share.sum() > 0.99) & (share.sum() < 1.01)) |
         (share.sum() == 0.0)
     ).all(), share.sum()
-    share.to_csv(path_to_output, header=True)
+    share.to_csv(str(path_to_output), header=True)
 
 
 def _share_of_coast_length(args):
@@ -69,6 +69,6 @@ if __name__ == "__main__":
     allocate_eezs(
         path_to_units=snakemake.input.units,
         path_to_eezs=snakemake.input.eez,
-        path_to_output=snakemake.output[0],
-        threads=snakemake.input.threads[0]
+        path_to_output=snakemake.output,
+        threads=snakemake.input.threads
     )

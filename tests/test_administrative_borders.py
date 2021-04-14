@@ -8,7 +8,7 @@ import shapely.geometry
 import pycountry
 import fiona
 
-from src.administrative_borders import _study_area, _to_multi_polygon, _drop_countries, _drop_geoms_completely_outside_study_area, _drop_parts_of_geoms_completely_outside_study_area, _update_features
+from scripts.administrative_borders import _study_area, _to_multi_polygon, _drop_countries, _drop_geoms_completely_outside_study_area, _drop_parts_of_geoms_completely_outside_study_area, _update_features
 
 # Loading the 60M file for its smaller size (1M used in actual workflow)
 URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_{}_4326.geojson"
@@ -58,7 +58,7 @@ class TestStudyArea():
         return _config
 
     def test_bounding_box(self):
-        area = _study_area(self.config())
+        area = _study_area(self.config()["scope"])
         assert area.bounds == (0.0, 50.0, 1.0, 51.0)
 
 
@@ -67,8 +67,8 @@ class TestStudyArea():
         [(1, (0.55, 50.3), (0.7, 50.7)), (2, (0.05, 50.05), (0.05, 50.3))]
     )
     def test_exclusion_zone(self, exclusions, not_in, is_in):
-        no_exclusions = _study_area(self.config())
-        with_exclusions = _study_area(self.config(exclusions))
+        no_exclusions = _study_area(self.config()["scope"])
+        with_exclusions = _study_area(self.config(exclusions)["scope"])
 
         assert no_exclusions.area > with_exclusions.area
         assert with_exclusions.bounds == no_exclusions.bounds
@@ -79,13 +79,11 @@ class TestStudyArea():
 
 class TestGeomManipulation():
     CONFIG = {
-        "scope": {
-            'bounds': {  # IRE and GBR, not including shetland and some of cornwall
-                'x_min': -10,
-                'x_max': 1,
-                'y_min': 51.11,
-                'y_max': 60.1,
-            }
+        'bounds': {  # IRE and GBR, not including shetland and some of cornwall
+            'x_min': -10,
+            'x_max': 1,
+            'y_min': 51.11,
+            'y_max': 60.1,
         }
     }
     NOT_DROPPED = ['IRL', 'North West (England)']
@@ -97,7 +95,7 @@ class TestGeomManipulation():
         "Removing parts of United Kingdom (nuts0, country=GBR)",
     ]
 
-    @pytest.fixture("class")
+    @pytest.fixture
     def europe_gdf(self):
         gdf = gpd.read_file(
             URL_NUTS.format(CONFIG_DEFAULT["parameters"]["nuts-year"])
@@ -113,18 +111,16 @@ class TestGeomManipulation():
         assert all(polys.area == europe_gdf.area)
 
     def test_drop_countries(self, europe_gdf):
-        config = {
-            "scope": {"countries": ["Germany", "France", "Greece"]}
-        }
+        config = {"countries": ["Germany", "France", "Greece"]}
 
         assert set(europe_gdf.country_code) != set(
-            [pycountry.countries.lookup(i).alpha_3 for i in config["scope"]["countries"]]
+            [pycountry.countries.lookup(i).alpha_3 for i in config["countries"]]
         )
 
         gdf = _drop_countries(europe_gdf, config)
 
         assert set(gdf.country_code) == set(
-            [pycountry.countries.lookup(i).alpha_3 for i in config["scope"]["countries"]]
+            [pycountry.countries.lookup(i).alpha_3 for i in config["countries"]]
         )
 
     def test_drop_geoms(self, capsys, europe_gdf):

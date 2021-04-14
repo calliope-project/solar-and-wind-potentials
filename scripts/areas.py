@@ -14,8 +14,8 @@ import rasterio
 from rasterstats import zonal_stats
 import fiona
 
-from src.technical_eligibility import Eligibility, FOREST, FARM, OTHER
-from src.potentials import ProtectedArea
+from technical_eligibility import Eligibility, FOREST, FARM, OTHER
+from potentials import ProtectedArea
 
 
 def areas(path_to_units, path_to_eez, path_to_shared_coast, path_to_eligible_area,
@@ -29,22 +29,22 @@ def areas(path_to_units, path_to_eez, path_to_shared_coast, path_to_eligible_are
     * allocate the offshore areas to exclusive economic zones (EEZ),
     * allocate the offshore areas of EEZ to units based on the fraction of shared coast.
     """
-    with rasterio.open(path_to_eligibility_categories, "r") as src:
+    with rasterio.open(str(path_to_eligibility_categories), "r") as src:
         category_map = src.read(1)
-    with rasterio.open(path_to_eligible_area, "r") as src:
+    with rasterio.open(str(path_to_eligible_area), "r") as src:
         transform = src.transform
         area_map = src.read(1)
-    with rasterio.open(path_to_land_cover, "r") as src:
+    with rasterio.open(str(path_to_land_cover), "r") as src:
         land_cover = src.read(1)
-    with rasterio.open(path_to_protected_areas, "r") as src:
+    with rasterio.open(str(path_to_protected_areas), "r") as src:
         protected_areas = src.read(1)
-    with fiona.open(path_to_units, "r") as src:
+    with fiona.open(str(path_to_units), "r") as src:
         unit_ids = [feature["properties"]["id"] for feature in src]
         unit_geometries = [feature["geometry"] for feature in src]
-    with fiona.open(path_to_eez, "r") as src:
+    with fiona.open(str(path_to_eez), "r") as src:
         eez_ids = [feature["properties"]["id"] for feature in src]
         eez_geometries = [feature["geometry"] for feature in src]
-    shared_coasts = pd.read_csv(path_to_shared_coast, index_col=0)
+    shared_coasts = pd.read_csv(str(path_to_shared_coast), index_col=0)
 
     area_map = apply_scenario_config_to_areas(
         area_map=area_map,
@@ -92,7 +92,7 @@ def areas(path_to_units, path_to_eez, path_to_shared_coast, path_to_eligible_are
     areas = pd.concat([onshore_areas, offshore_areas], axis=1)
     areas.index.name = "id"
     areas.to_csv(
-        path_to_result,
+        str(path_to_result),
         header=True,
         index=True
     )

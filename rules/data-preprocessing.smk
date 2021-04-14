@@ -1,8 +1,6 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
 
-PYTHON = "PYTHONPATH=./ python"
-
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
 
@@ -30,10 +28,10 @@ rule raw_gadm_administrative_borders_zipped:
 
 
 rule raw_gadm_administrative_borders:
-    message: "Unzip administrative borders of {wildcards.country_code} as zip."
+    message: "Unzip administrative borders of {wildcards.country_code}."
     input: "data/automatic/raw-gadm/{country_code}.zip"
     output: temp("build/raw-gadm/gadm36_{country_code}.gpkg")
-    shell: "unzip -o {input} -d data/automatic/raw-gadm"
+    shell: "unzip -o {input} -d build/raw-gadm"
 
 
 rule all_gadm_administrative_borders:
@@ -54,7 +52,7 @@ rule raw_nuts_units:
     output:
         protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
     params:
-        url = config["data-sources"]["nuts"].format(config["parameters"]["nuts-year"])
+        url = config["data-sources"]["nuts"].format(nuts_year=config["parameters"]["nuts-year"])
     shell:
         "curl -sLo {output} '{params.url}'"
 
@@ -68,21 +66,27 @@ rule raw_lau_units_zipped:
         "curl -sLo {output} '{params.url}'"
 
 
+rule raw_lau_units_unzipped:
+    message: "Unzip LAU units."
+    input:
+        zip = rules.raw_lau_units_zipped.output
+    output:
+        shapes = "build/raw-lau-units/COMM_RG_01M_2013.shp",
+        attributes = "build/raw-lau-units/COMM_AT_2013.dbf"
+    shell: "unzip -j {input.zip} COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp COMM_01M_2013_SH/data/COMM_AT_2013.dbf -d build/raw-lau-units"
+
+
 rule administrative_borders_lau:
     message: "Normalise LAU administrative borders."
     input:
         src = script_dir + "lau.py",
-        zip = rules.raw_lau_units_zipped.output
+        shapes = rules.raw_lau_units_unzipped.output.shapes,
+        attributes = rules.raw_lau_units_unzipped.output.attributes,
     output:
         temp("build/raw-lau.gpkg")
     shadow: "full"
     conda: "../envs/default.yaml"
-    shell:
-        """
-        unzip {input.zip} -d ./build
-        {PYTHON} {input.src} merge ./build/COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp \
-        ./build/COMM_01M_2013_SH/data/COMM_AT_2013.dbf ./build/raw-lau.gpkg
-        """
+    script: "../scripts/lau.py"
 
 
 rule administrative_borders:

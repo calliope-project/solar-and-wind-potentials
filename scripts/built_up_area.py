@@ -4,18 +4,18 @@ import rasterio
 from rasterstats import zonal_stats
 import pandas as pd
 
-from src.utils import determine_pixel_areas
+from utils import determine_pixel_areas
 
 
 def built_up_areas(path_to_built_up_share, path_to_units, path_to_result):
     """Determine the built up area in administrative units."""
-    with rasterio.open(path_to_built_up_share) as src:
+    with rasterio.open(str(path_to_built_up_share)) as src:
         built_up_share = src.read(1)
         crs = src.crs
         transform = src.transform
         bounds = src.bounds
         resolution = src.res[0]
-    with fiona.open(path_to_units, "r") as src:
+    with fiona.open(str(path_to_units), "r") as src:
         unit_ids = [feature["properties"]["id"] for feature in src]
         unit_geometries = [feature["geometry"] for feature in src]
 
@@ -31,7 +31,7 @@ def built_up_areas(path_to_built_up_share, path_to_units, path_to_result):
                                         (built_up_stats["built_up_km2"] + built_up_stats["non_built_up_km2"]))
     built_up_stats.index.name = "id"
     built_up_stats.to_csv(
-        path_to_result,
+        str(path_to_result),
         header=True,
         index=True
     )
@@ -52,5 +52,5 @@ if __name__ == "__main__":
     built_up_areas(
         path_to_built_up_share=snakemake.input.built_up_area,
         path_to_units=snakemake.input.units,
-        path_to_result=snakemake.output[0]
+        path_to_result=snakemake.output
     )

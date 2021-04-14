@@ -31,7 +31,7 @@ rule pv_simulation_points:
         ninja = config["parameters"]["ninja"],
         maximum_power_density = config["parameters"]["maximum-installable-power-density"]
     output:
-        points = "build/capacityfactors/ninja-input-pv.csv",
+        points = "build/capacityfactors/ninja-input-pv.csv"
     conda: "../envs/default.yaml"
     script: "../scripts/capacityfactors/ninja_input_pv.py"
 
@@ -42,6 +42,9 @@ rule wind_simulation_points:
         script = script_dir + "capacityfactors/ninja_input_wind.py",
         units = "build/continental/units.geojson",
         eez = "build/eez-in-europe.geojson"
+    params:
+        bounds = config["scope"]["bounds"],
+        ninja = config["parameters"]["ninja"],
     output:
         points_onshore = "build/capacityfactors/ninja-input-wind-onshore.csv",
         points_offhore = "build/capacityfactors/ninja-input-wind-offshore.csv",

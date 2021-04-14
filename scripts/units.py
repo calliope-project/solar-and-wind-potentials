@@ -11,7 +11,7 @@ def remix_units(path_to_borders, layer_name, layer_config, countries, path_to_ou
     _validate_source_layers(source_layers)
     _validate_layer_config(layer_config, layer_name, countries)
     layer = _build_layer(layer_config, source_layers)
-    _validate_layer(layer_config, layer_name, countries)
+    _validate_layer(layer, layer_name, countries)
     if layer_name == "continental": # treat special case
         layer = _continental_layer(layer)
     _write_layer(layer, path_to_output)
@@ -19,7 +19,7 @@ def remix_units(path_to_borders, layer_name, layer_config, countries, path_to_ou
 
 def _read_source_layers(path_to_borders, layers):
     source_layers = {
-        layer_name: gpd.read_file(path_to_borders, layer=layer_name)
+        layer_name: gpd.read_file(str(path_to_borders), layer=layer_name)
         for layer_name in set(layers.values())
     }
     return source_layers
@@ -68,16 +68,16 @@ def _continental_layer(layer):
 
 def _write_layer(gdf, path_to_file):
     gdf.to_file(
-        path_to_file,
+        str(path_to_file),
         driver=DRIVER
     )
 
 
 if __name__ == "__main__":
     remix_units(
-        administrative_borders=snakemake.input.administrative_borders,
+        path_to_borders=snakemake.input.administrative_borders,
         layer_name=snakemake.params.layer_name,
         layer_config=snakemake.params.layer_config,
         countries=snakemake.params.countries,
-        path_to_output=snakemake.output[0]
+        path_to_output=snakemake.output
     )

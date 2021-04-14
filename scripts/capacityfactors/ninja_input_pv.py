@@ -2,7 +2,7 @@
 import pandas as pd
 import geopandas as gpd
 
-from src.capacityfactors import point_raster_on_shapes
+from utils import point_raster_on_shapes
 
 
 def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_categories,

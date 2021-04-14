@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.capacityfactors.ninja_input_pv import area_to_capacity
+from scripts.capacityfactors.ninja_input_pv import area_to_capacity
 
 ROOF_MODEL = """orientation,average_tilt,share_of_roof_areas
 E, 18.155579, 0.049090

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from src.technical_eligibility import Eligibility, _determine_eligibility, GlobCover
+from scripts.technical_eligibility import Eligibility, _determine_eligibility, GlobCover
 
 
 @pytest.fixture

@@ -3,7 +3,7 @@ import math
 
 import pytest
 
-from src.conversion import watt_to_watthours, eu_country_code_to_iso3, coordinate_string_to_decimal,\
+from scripts.conversion import watt_to_watthours, eu_country_code_to_iso3, coordinate_string_to_decimal,\
     transform_coordinates
 
 

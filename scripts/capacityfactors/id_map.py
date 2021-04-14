@@ -1,7 +1,6 @@
 """Create maps of ids to capacity factor timeseries of renewables."""
 import math
 
-import click
 import numpy as np
 import geopandas as gpd
 import shapely
@@ -19,10 +18,6 @@ WGS84_PROJ4 = "+proj=longlat +datum=WGS84 +no_defs "
 WGS84 = "EPSG:4326"
 
 
-@click.command()
-@click.argument("path_to_timeseries")
-@click.argument("path_to_map")
-@click.argument("resolution_km", type=int)
 def id_map(path_to_timeseries, path_to_map, resolution_km):
     """Create maps of ids to capacity factor timeseries of renewables.
 
@@ -75,4 +70,8 @@ def isclose(a, b):
 
 
 if __name__ == "__main__":
-    id_map()
+    id_map(
+        path_to_timeseries=snakemake.input.timeseries,
+        resolution_km=snakemake.params.resolution,
+        path_to_map=snakemake.output[0]
+    )

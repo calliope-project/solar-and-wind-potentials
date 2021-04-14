@@ -3,18 +3,18 @@ import numpy as np
 import pandas as pd
 import rasterio
 
-from src.technical_eligibility import Eligibility
+from technical_eligibility import Eligibility
 def determine_capacities(
     path_to_eligibility_categories, path_to_eligible_areas, path_to_statistical_roof_model,
     maximum_installable_power_density, path_to_pv_prio_result, path_to_wind_prio_result
 ):
     """Determines maximal capacities for renewables."""
-    with rasterio.open(path_to_eligible_areas) as src:
+    with rasterio.open(str(path_to_eligible_areas)) as src:
         meta = src.meta
         areas = src.read(1)
-    with rasterio.open(path_to_eligibility_categories) as src:
+    with rasterio.open(str(path_to_eligibility_categories)) as src:
         eligibility_categories = src.read(1)
-    flat_roof_share = pd.read_csv(path_to_statistical_roof_model).set_index("orientation").loc[
+    flat_roof_share = pd.read_csv(str(path_to_statistical_roof_model)).set_index("orientation").loc[
         "flat", "share_of_roof_areas"
     ]
     capacities_pv_prio = _determine_capacities(areas, eligibility_categories, maximum_installable_power_density, flat_roof_share, pv_prio=True)
@@ -56,7 +56,7 @@ def _power_density_mw_per_km2(eligibility, pv_prio, flat_roof_share, maximum_ins
 
 
 def _write_to_file(path_to_file, capacities, meta):
-    with rasterio.open(path_to_file, 'w', **meta) as new_geotiff:
+    with rasterio.open(str(path_to_file), 'w', **meta) as new_geotiff:
         new_geotiff.write(capacities, 1)
 
 

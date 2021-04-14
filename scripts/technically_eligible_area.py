@@ -2,8 +2,8 @@
 import numpy as np
 import rasterio
 
-from src.utils import determine_pixel_areas
-from src.technical_eligibility import Eligibility
+from utils import determine_pixel_areas
+from technical_eligibility import Eligibility
 
 DATATYPE = np.float32
 
@@ -16,7 +16,7 @@ def determine_area(path_to_eligibility_categories, path_to_building_share,
     For rooftop PV, we reduce the area to the building footprints, and we furthermore apply a
     correction factor to map from building footprint to available rooftop space.
     """
-    with rasterio.open(path_to_eligibility_categories) as src:
+    with rasterio.open(str(path_to_eligibility_categories)) as src:
         eligibility_categories = src.read(1)
         meta = src.meta
         bounds = src.bounds
@@ -31,8 +31,8 @@ def determine_area(path_to_eligibility_categories, path_to_building_share,
 
 def determine_rooftop_areas(pixel_areas, path_to_building_share, path_to_rooftop_correction_factor):
     """Returns a raster in which the value corresponds to the rooftop area in the pixel."""
-    with rasterio.open(path_to_building_share) as f_building_share, \
-            open(path_to_rooftop_correction_factor, "r") as f_factor:
+    with rasterio.open(str(path_to_building_share)) as f_building_share, \
+            open(str(path_to_rooftop_correction_factor), "r") as f_factor:
         factor = float(f_factor.readline())
         building_share = f_building_share.read(1)
     return pixel_areas * building_share * factor
@@ -40,7 +40,7 @@ def determine_rooftop_areas(pixel_areas, path_to_building_share, path_to_rooftop
 
 def write_to_file(areas_of_eligibility, path_to_result, meta):
     meta.update(dtype=DATATYPE)
-    with rasterio.open(path_to_result, 'w', **meta) as new_geotiff:
+    with rasterio.open(str(path_to_result), 'w', **meta) as new_geotiff:
         new_geotiff.write(areas_of_eligibility, 1)
 
 
@@ -49,5 +49,5 @@ if __name__ == "__main__":
         path_to_eligibility_categories=snakemake.input.eligibility_categories,
         path_to_building_share=snakemake.input.building_share,
         path_to_rooftop_correction_factor=snakemake.input.rooftop_correction_factor,
-        path_to_result=snakemake.output[0]
+        path_to_result=snakemake.output
     )
