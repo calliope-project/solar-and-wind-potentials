@@ -12,17 +12,17 @@ def determine_electricity_yield(path_to_eligibility_categories, path_to_capaciti
                                 path_to_cf_wind_prio,
                                 path_to_pv_prio_result, path_to_wind_prio_result):
     """Determines maximal electricity yield for renewables."""
-    with rasterio.open(path_to_capacities_pv_prio) as src:
+    with rasterio.open(str(path_to_capacities_pv_prio)) as src:
         meta = src.meta
         capacity_pv_prio_mw = src.read(1)
-    with rasterio.open(path_to_capacities_wind_prio) as src:
+    with rasterio.open(str(path_to_capacities_wind_prio)) as src:
         capacity_wind_prio_mw = src.read(1)
-    with rasterio.open(path_to_eligibility_categories) as src:
+    with rasterio.open(str(path_to_eligibility_categories)) as src:
         eligibility_categories = src.read(1)
-    with rasterio.open(path_to_cf_pv_prio) as src:
+    with rasterio.open(str(path_to_cf_pv_prio)) as src:
         no_cf = src.nodata
         cf_pv_prio = src.read(1)
-    with rasterio.open(path_to_cf_wind_prio) as src:
+    with rasterio.open(str(path_to_cf_wind_prio)) as src:
         cf_wind_prio = src.read(1)
     electricity_yield_pv_prio = _determine_electricity_yield(
         capacity_mw=capacity_pv_prio_mw,
@@ -48,7 +48,7 @@ def _determine_electricity_yield(capacity_mw, eligibility_category, cf, data_mas
 
 
 def _write_to_file(path_to_file, electricity_yield, meta):
-    with rasterio.open(path_to_file, 'w', **meta) as new_geotiff:
+    with rasterio.open(str(path_to_file), 'w', **meta) as new_geotiff:
         new_geotiff.write(electricity_yield, 1)
 
 

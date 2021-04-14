@@ -83,9 +83,9 @@ URBAN = [GlobCover.ARTIFICAL_SURFACES_AND_URBAN_AREAS]
 WATER = [GlobCover.WATER_BODIES]
 
 
-def determine_eligibility(path_to_land_cover, path_to_slope,
-                          path_to_bathymetry, path_to_building_share, path_to_urban_green_share,
-                          path_to_result, max_slope, max_building_share, max_urban_green_share):
+def determine_eligibility(path_to_land_cover, path_to_slope, path_to_bathymetry,
+                          path_to_building_share, path_to_urban_green_share, path_to_result,
+                          max_slope, max_building_share, max_urban_green_share, max_depth_offshore):
     """Determines eligibility of land for renewables."""
     with rasterio.open(str(path_to_land_cover)) as src:
         transform = src.transform
@@ -108,6 +108,7 @@ def determine_eligibility(path_to_land_cover, path_to_slope,
         max_slope=max_slope,
         max_building_share=max_building_share,
         max_urban_green_share=max_urban_green_share,
+        max_depth_offshore=max_depth_offshore
     )
     with rasterio.open(str(path_to_result), 'w', driver='GTiff', height=eligibility.shape[0],
                        width=eligibility.shape[1], count=1, dtype=DATATYPE,
@@ -116,7 +117,8 @@ def determine_eligibility(path_to_land_cover, path_to_slope,
 
 
 def _determine_eligibility(
-    land_cover, slope, bathymetry, building_share, urban_green_share, max_slope, max_building_share, max_urban_green_share
+    land_cover, slope, bathymetry, building_share, urban_green_share,
+    max_slope, max_building_share, max_urban_green_share, max_depth_offshore
 ):
     # parameters
     max_slope_pv = max_slope["pv"]
@@ -131,7 +133,7 @@ def _determine_eligibility(
     water = np.isin(land_cover, WATER)
     pv = (slope <= max_slope_pv) & ~settlements & (farm | other)
     wind = (slope <= max_slope_wind) & ~settlements & (farm | forest | other)
-    offshore = (bathymetry > config["parameters"]["max-depth-offshore"]) & ~settlements & water
+    offshore = (bathymetry > max_depth_offshore) & ~settlements & water
 
     # allocate eligibility
     land = np.ones_like(land_cover, dtype=DATATYPE) * Eligibility.NOT_ELIGIBLE
@@ -157,5 +159,6 @@ if __name__ == "__main__":
         max_slope=snakemake.params.max_slope,
         max_building_share=snakemake.params.max_building_share,
         max_urban_green_share=snakemake.params.max_urban_green_share,
+        max_depth_offshore=snakemake.params.max_depth_offshore,
         path_to_result=snakemake.output
     )

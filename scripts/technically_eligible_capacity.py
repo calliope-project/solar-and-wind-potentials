@@ -62,7 +62,7 @@ def _write_to_file(path_to_file, capacities, meta):
 
 if __name__ == "__main__":
     determine_capacities(
-        path_to_eligibility_categories=snakemake.input.ligibility_categories,
+        path_to_eligibility_categories=snakemake.input.eligibility_categories,
         path_to_eligible_areas=snakemake.input.eligible_areas,
         path_to_statistical_roof_model=snakemake.input.statistical_roof_model,
         maximum_installable_power_density=snakemake.params.maximum_installable_power_density,

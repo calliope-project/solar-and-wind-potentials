@@ -22,7 +22,8 @@ rule category_of_technical_eligibility:
     params:
         max_slope = config["parameters"]["max-slope"],
         max_building_share = config["parameters"]["max-building-share"],
-        max_urban_green_share = config["parameters"]["max-urban-green-share"]
+        max_urban_green_share = config["parameters"]["max-urban-green-share"],
+        max_depth_offshore = config["parameters"]["max-depth-offshore"]
     output:
         "build/technically-eligible-land.tif"
     conda: "../envs/default.yaml"

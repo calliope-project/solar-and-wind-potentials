@@ -70,5 +70,5 @@ if __name__ == "__main__":
         path_to_units=snakemake.input.units,
         path_to_eezs=snakemake.input.eez,
         path_to_output=snakemake.output,
-        threads=snakemake.input.threads
+        threads=snakemake.threads
     )

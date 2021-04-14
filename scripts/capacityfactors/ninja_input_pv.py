@@ -10,11 +10,11 @@ def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_catego
     """Create PV simulation input for renewables.ninja."""
     points = point_raster_on_shapes(
         bounds_wgs84=bounds,
-        shapes=gpd.read_file(path_to_shapes_of_land_surface),
+        shapes=gpd.read_file(str(path_to_shapes_of_land_surface)),
         resolution_km2=ninja["resolution-grid"]
     )
 
-    roof_categories = pd.read_csv(path_to_roof_categories, index_col=[0, 1])
+    roof_categories = pd.read_csv(str(path_to_roof_categories), index_col=[0, 1])
     roof_categories = area_to_capacity(
         roof_categories,
         power_density_flat=maximum_power_density["pv-on-flat-areas"],
@@ -46,7 +46,7 @@ def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_catego
         ["sim_id", "weight", "site_id", "lat", "long", "average_tilt",
          "orientation", "azim", "pr"]
     ].sort_index().to_csv(
-        path_to_output,
+        str(path_to_output),
         header=True,
         index=False
     )
