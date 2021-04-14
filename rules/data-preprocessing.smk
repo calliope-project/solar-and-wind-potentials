@@ -73,7 +73,7 @@ rule raw_lau_units_unzipped:
     output:
         shapes = "build/raw-lau-units/COMM_RG_01M_2013.shp",
         attributes = "build/raw-lau-units/COMM_AT_2013.dbf"
-    shell: "unzip -j {input.zip} COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp COMM_01M_2013_SH/data/COMM_AT_2013.dbf -d build/raw-lau-units"
+    shell: "unzip -j {input.zip} -d build/raw-lau-units"
 
 
 rule administrative_borders_lau:
