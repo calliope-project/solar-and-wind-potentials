@@ -19,7 +19,7 @@ def remix_units(path_to_borders, layer_name, layer_config, countries, path_to_ou
 
 def _read_source_layers(path_to_borders, layers):
     source_layers = {
-        layer_name: gpd.read_file(str(path_to_borders), layer=layer_name)
+        layer_name: gpd.read_file(path_to_borders, layer=layer_name)
         for layer_name in set(layers.values())
     }
     return source_layers
@@ -68,7 +68,7 @@ def _continental_layer(layer):
 
 def _write_layer(gdf, path_to_file):
     gdf.to_file(
-        str(path_to_file),
+        path_to_file,
         driver=DRIVER
     )
 
@@ -79,5 +79,5 @@ if __name__ == "__main__":
         layer_name=snakemake.params.layer_name,
         layer_config=snakemake.params.layer_config,
         countries=snakemake.params.countries,
-        path_to_output=snakemake.output
+        path_to_output=snakemake.output[0]
     )

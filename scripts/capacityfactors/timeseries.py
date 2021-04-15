@@ -15,13 +15,13 @@ FILE_SUFFIX = "nc"
 
 def timeseries(path_to_input, path_to_output):
     """Create index capacity factor timeseries of renewables from separate renewables.ninja runs."""
-    ds = xr.open_dataset(str(path_to_input))
-    if "open-field-pv" in str(path_to_input):
+    ds = xr.open_dataset(path_to_input)
+    if "open-field-pv" in path_to_input:
         ds = select_flat_surfaces_only(ds)
-    elif "rooftop-pv" in str(path_to_input):
+    elif "rooftop-pv" in path_to_input:
         ds = weigh_capacity_factors(ds)
     ds = groupby_sites(ds)
-    ds.to_netcdf(str(path_to_output), "w")
+    ds.to_netcdf(path_to_output, "w")
 
 
 def groupby_sites(ds):
@@ -42,5 +42,5 @@ def weigh_capacity_factors(ds):
 if __name__ == "__main__":
     timeseries(
         path_to_input=snakemake.input.capacityfactor,
-        path_to_output=snakemake.output
+        path_to_output=snakemake.output[0]
     )

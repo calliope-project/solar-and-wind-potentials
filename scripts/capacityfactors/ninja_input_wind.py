@@ -29,7 +29,7 @@ def wind(path_to_shapes_of_land_surface, path_to_shapes_of_water_surface, bounds
 def write_parameters(bounds, resolution, path_to_shapes, hub_height, turbine, path_to_output):
     points = point_raster_on_shapes(
         bounds_wgs84=bounds,
-        shapes=gpd.read_file(str(path_to_shapes)),
+        shapes=gpd.read_file(path_to_shapes),
         resolution_km2=resolution
     )
     parameters = pd.DataFrame(
@@ -44,7 +44,7 @@ def write_parameters(bounds, resolution, path_to_shapes, hub_height, turbine, pa
     parameters["site_id"] = parameters.index
     parameters["weight"] = 1
     parameters[["sim_id", "weight", "site_id", "lat", "long", "hub_height", "turbine"]].to_csv(
-        str(path_to_output),
+        path_to_output,
         header=True,
         index=False
     )

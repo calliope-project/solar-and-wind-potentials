@@ -93,9 +93,9 @@ rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
         src = script_dir + "administrative_borders.py",
-        nuts_geojson = rules.raw_nuts_units.output,
-        gadm_gpkg = rules.all_gadm_administrative_borders.output,
-        lau_gpkg = rules.administrative_borders_lau.output
+        nuts_geojson = rules.raw_nuts_units.output[0],
+        gadm_gpkg = rules.all_gadm_administrative_borders.output[0],
+        lau_gpkg = rules.administrative_borders_lau.output[0]
     params:
         crs = config["crs"],
         scope = config["scope"]
@@ -140,13 +140,9 @@ rule raw_protected_areas:
 
 rule raw_srtm_elevation_tile_zipped:
     message: "Download SRTM elevation data tile (x={wildcards.x}, y={wildcards.y}) from CGIAR."
-    output:
-        protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
+    output: protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
     params: url = config["data-sources"]["cgiar_tile"]
-    shell:
-        """
-        curl -sLo {output} '{params.url}/srtm_{wildcards.x}_{wildcards.y}.zip'
-        """
+    shell: "curl -sLo {output} '{params.url}/srtm_{wildcards.x}_{wildcards.y}.zip'"
 
 
 rule raw_srtm_elevation_tile:
@@ -215,7 +211,7 @@ rule raw_bathymetry_zipped:
 
 rule raw_bathymetry:
     message: "Extract bathymetric data from zip."
-    input: rules.raw_bathymetry_zipped.output
+    input: rules.raw_bathymetry_zipped.output[0]
     output: temp("build/ETOPO1_Bed_g_geotiff.tif")
     shell: "unzip {input} -d ./build/"
 
@@ -320,7 +316,7 @@ rule settlements:
         class45 = config["data-sources"]["settlement_data"].format(esm_class="45"),
         class30 = config["data-sources"]["settlement_data"].format(esm_class="30"),
         class35 = config["data-sources"]["settlement_data"].format(esm_class="35"),
-        reference = rules.land_cover_in_europe.output
+        reference = rules.land_cover_in_europe.output[0]
     output:
         buildings = "build/esm-class50-buildings.tif",
         urban_greens = "build/esm-class404145-urban-greens.tif",
@@ -351,10 +347,7 @@ rule bathymetry_in_europe:
     output:
         "build/bathymetry-in-europe.tif"
     conda: "../envs/default.yaml"
-    shell:
-        """
-        rio warp {input.bathymetry} -o {output} --like {input.reference} --resampling min
-        """
+    shell: "rio warp {input.bathymetry} -o {output} --like {input.reference} --resampling min"
 
 
 rule eez_in_europe:

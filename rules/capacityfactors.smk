@@ -52,7 +52,7 @@ rule time_average_capacityfactor_map:
     input:
         scripts = script_dir + "capacityfactors/averages_map.py",
         id_map = "build/capacityfactors/{technology}-ids.tif",
-        timeseries = rules.capacityfactor_timeseries.output
+        timeseries = "build/capacityfactors/{technology}-timeseries.nc"
     output:
         "build/capacityfactors/{technology}-time-average.tif"
     conda: "../envs/default.yaml"

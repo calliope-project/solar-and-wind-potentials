@@ -26,7 +26,7 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, crs, scope_
     for _src, _path in {
         'nuts': path_to_nuts, 'gadm': path_to_gadm, 'lau': path_to_lau
     }.items():
-        gdf = gpd.read_file(str(_path))
+        gdf = gpd.read_file(_path)
         gdf = gdf.to_crs(crs)
         gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(_to_multi_polygon)
         gdf = _update_features(gdf, _src)
@@ -40,7 +40,7 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, crs, scope_
 
         for lvl in gdf.level.unique():
             gdf.loc[gdf.level == lvl, allowed_cols].to_file(
-                str(path_to_output), schema=SCHEMA, layer=lvl, driver=OUTPUT_DRIVER
+                path_to_output, schema=SCHEMA, layer=lvl, driver=OUTPUT_DRIVER
             )
 
 
@@ -184,5 +184,5 @@ if __name__ == "__main__":
         path_to_lau=snakemake.input.lau_gpkg,
         crs=snakemake.params.crs,
         scope_config=snakemake.params.scope,
-        path_to_output=snakemake.output
+        path_to_output=snakemake.output[0]
     )

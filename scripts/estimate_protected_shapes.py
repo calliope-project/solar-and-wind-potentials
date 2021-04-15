@@ -15,7 +15,7 @@ EPSG_3035_PROJ4 = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ell
 
 def estimate_shapes(path_to_input, scope_config, path_to_output):
     """Estimates the shap of protected areas for which only centroids are known."""
-    points = gpd.read_file(str(path_to_input))
+    points = gpd.read_file(path_to_input)
     points_in_scope = filter_points(points, scope_config)
     original_crs = points_in_scope.crs
     # convert points to circles
@@ -23,7 +23,7 @@ def estimate_shapes(path_to_input, scope_config, path_to_output):
     points_in_scope.geometry = [rec[1].geometry.buffer(radius_meter(rec[1]["REP_AREA"]))
                                 for rec in points_in_scope.iterrows()]
     test_area_size(points_in_scope)
-    points_in_scope.to_crs(original_crs).to_file(str(path_to_output), driver="GeoJSON")
+    points_in_scope.to_crs(original_crs).to_file(path_to_output, driver="GeoJSON")
 
 
 def filter_points(points, scope_config):
@@ -52,5 +52,5 @@ if __name__ == "__main__":
     estimate_shapes(
         path_to_input=snakemake.input.protected_areas,
         scope_config=snakemake.params.scope,
-        path_to_output=snakemake.output
+        path_to_output=snakemake.output[0]
     )

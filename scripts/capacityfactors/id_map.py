@@ -24,7 +24,7 @@ def id_map(path_to_timeseries, path_to_map, resolution_km):
     Each point on the map links to a timeseries of capacity factors of renewables. Together with the
     timeseries, both files form the spatio-temporal data format used in this study.
     """
-    ds = xr.open_dataset(str(path_to_timeseries))
+    ds = xr.open_dataset(path_to_timeseries)
     pv_config = ds[["lat", "lon"]].to_dataframe()
     points = gpd.GeoDataFrame(
         geometry=[shapely.geometry.Point(row.lon, row.lat) for _, row in pv_config.iterrows()],
@@ -59,7 +59,7 @@ def id_map(path_to_timeseries, path_to_map, resolution_km):
         xsize=resolution_m,
         ysize=resolution_m
     )
-    with rasterio.open(str(path_to_map), 'w', driver='GTiff', height=height, width=width,
+    with rasterio.open(path_to_map, 'w', driver='GTiff', height=height, width=width,
                        count=1, dtype=DTYPE, crs=EPSG_3035, transform=transform,
                        nodata=NO_DATA_VALUE) as f_map:
         f_map.write(raster, 1)
@@ -73,5 +73,5 @@ if __name__ == "__main__":
     id_map(
         path_to_timeseries=snakemake.input.timeseries,
         resolution_km=snakemake.params.resolution,
-        path_to_map=snakemake.output
+        path_to_map=snakemake.output[0]
     )

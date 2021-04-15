@@ -14,9 +14,9 @@ rule category_of_technical_eligibility:
         "Determine upper bound surface eligibility for renewables based on land cover, slope, bathymetry, and settlements."
     input:
         src = script_dir + "technical_eligibility.py",
-        land_cover = rules.land_cover_in_europe.output,
-        slope = rules.slope_in_europe.output,
-        bathymetry = rules.bathymetry_in_europe.output,
+        land_cover = rules.land_cover_in_europe.output[0],
+        slope = rules.slope_in_europe.output[0],
+        bathymetry = rules.bathymetry_in_europe.output[0],
         building_share = rules.settlements.output.buildings,
         urban_green_share = rules.settlements.output.urban_greens
     params:
@@ -36,7 +36,7 @@ rule total_size_swiss_building_footprints_according_to_settlement_data:
         src = script_dir + "swiss_building_footprints.py",
         building_footprints = rules.settlements.output.buildings,
         eligibility = "build/technically-eligible-land.tif",
-        countries = rules.administrative_borders.output
+        countries = rules.administrative_borders.output[0]
     output:
         "build/building-footprints-according-to-settlement-data-km2.txt"
     conda: "../envs/default.yaml"
@@ -46,17 +46,17 @@ rule total_size_swiss_building_footprints_according_to_settlement_data:
 rule correction_factor_building_footprint_to_available_rooftop:
     message: "Determine the factor that maps from building footprints to available rooftop area for CHE."
     input:
-        rooftops = rules.total_size_swiss_rooftops_according_to_sonnendach_data.output,
-        building_footprints = rules.total_size_swiss_building_footprints_according_to_settlement_data.output
+        rooftops = rules.total_size_swiss_rooftops_according_to_sonnendach_data.output[0],
+        building_footprints = rules.total_size_swiss_building_footprints_according_to_settlement_data.output[0]
     output:
         "build/ratio-esm-available.txt"
     run:
-        with open(str(input.rooftops), "r") as f_in:
+        with open(input.rooftops, "r") as f_in:
             rooftops = float(f_in.read())
-        with open(str(input.building_footprints), "r") as f_in:
+        with open(input.building_footprints, "r") as f_in:
             building_footprints = float(f_in.read())
         ratio = rooftops / building_footprints
-        with open(str(output), "w") as f_out:
+        with open(output[0], "w") as f_out:
             f_out.write(f"{ratio:.3f}")
 
 
@@ -65,7 +65,7 @@ rule capacityfactor_of_technical_eligibility:
         "Determine capacityfactor of eligibility category."
     input:
         script = script_dir + "technically_eligible_capacityfactor.py",
-        eligibility_categories = rules.category_of_technical_eligibility.output,
+        eligibility_categories = rules.category_of_technical_eligibility.output[0],
         rooftop_pv_cf = "build/capacityfactors/rooftop-pv-time-average.tif",
         open_field_pv_cf = "build/capacityfactors/open-field-pv-time-average.tif",
         wind_onshore_cf = "build/capacityfactors/wind-onshore-time-average.tif",
@@ -83,9 +83,9 @@ rule area_of_technical_eligibility:
         "Quantify the area that is technically eligible for renewables."
     input:
         script = script_dir + "technically_eligible_area.py",
-        eligibility_categories = rules.category_of_technical_eligibility.output,
+        eligibility_categories = rules.category_of_technical_eligibility.output[0],
         building_share = rules.settlements.output.buildings,
-        rooftop_correction_factor = rules.correction_factor_building_footprint_to_available_rooftop.output
+        rooftop_correction_factor = rules.correction_factor_building_footprint_to_available_rooftop.output[0]
     output:
         "build/technically-eligible-area-km2.tif"
     conda: "../envs/default.yaml"
@@ -97,9 +97,9 @@ rule capacity_of_technical_eligibility:
         "Quantify the capacity that is technically eligible for renewables."
     input:
         script = script_dir + "technically_eligible_capacity.py",
-        eligibility_categories = rules.category_of_technical_eligibility.output,
-        eligible_areas = rules.area_of_technical_eligibility.output,
-        statistical_roof_model = rules.sonnendach_statistics.output
+        eligibility_categories = rules.category_of_technical_eligibility.output[0],
+        eligible_areas = rules.area_of_technical_eligibility.output[0],
+        statistical_roof_model = rules.sonnendach_statistics.output[0]
     params:
         maximum_installable_power_density = config["parameters"]["maximum-installable-power-density"]
     output:
@@ -114,7 +114,7 @@ rule electricity_yield_of_technical_eligibility:
         "Quantify the max annual electricity yield that is technically eligible for renewables."
     input:
         script = script_dir + "technically_eligible_electricity_yield.py",
-        eligibility_categories = rules.category_of_technical_eligibility.output,
+        eligibility_categories = rules.category_of_technical_eligibility.output[0],
         capacities_pv_prio = rules.capacity_of_technical_eligibility.output.pv,
         capacities_wind_prio = rules.capacity_of_technical_eligibility.output.wind,
         cf_pv_prio = rules.capacityfactor_of_technical_eligibility.output.pv,
@@ -130,7 +130,7 @@ rule units:
     message: "Form units of layer {wildcards.layer} by remixing NUTS, LAU, and GADM."
     input:
         script = script_dir + "units.py",
-        administrative_borders = rules.administrative_borders.output
+        administrative_borders = rules.administrative_borders.output[0]
     params:
         layer_name = "{layer}",
         layer_config = lambda wildcards: config["layers"][wildcards.layer],
@@ -145,8 +145,8 @@ rule local_land_cover:
     message: "Land cover statistics per unit of layer {wildcards.layer}."
     input:
         script = script_dir + "land_cover_stats_to_csv.py",
-        units = rules.units.output,
-        land_cover = rules.land_cover_in_europe.output
+        units = rules.units.output[0],
+        land_cover = rules.land_cover_in_europe.output[0]
     params:
         attributes = [
             "lc_11", "lc_14", "lc_20", "lc_30", "lc_40", "lc_50",
@@ -165,7 +165,7 @@ rule local_built_up_area:
     input:
         script = script_dir + "built_up_area.py",
         built_up_area = rules.settlements.output.built_up,
-        units = rules.units.output
+        units = rules.units.output[0]
     output:
         "build/{layer}/built-up-areas.csv"
     conda: "../envs/default.yaml"
@@ -176,8 +176,8 @@ rule shared_coast:
     message: "Determine share of coast length between eez and units of layer {wildcards.layer} using {threads} threads."
     input:
         script = script_dir + "shared_coast.py",
-        units = rules.units.output,
-        eez = rules.eez_in_europe.output
+        units = rules.units.output[0],
+        eez = rules.eez_in_europe.output[0]
     output:
         "build/{layer}/shared-coast.csv"
     threads: config["snakemake"]["max-threads"]
@@ -190,14 +190,14 @@ rule potentials:
         "Determine the constrained potentials for layer {wildcards.layer} in scenario {wildcards.scenario}."
     input:
         script = script_dir + "potentials.py",
-        units = rules.units.output,
-        eez = rules.eez_in_europe.output,
-        shared_coast = rules.shared_coast.output,
+        units = rules.units.output[0],
+        eez = rules.eez_in_europe.output[0],
+        shared_coast = rules.shared_coast.output[0],
         pv_yield = rules.electricity_yield_of_technical_eligibility.output.pv,
         wind_yield = rules.electricity_yield_of_technical_eligibility.output.wind,
-        category = rules.category_of_technical_eligibility.output,
-        land_cover = rules.land_cover_in_europe.output,
-        protected_areas = rules.protected_areas_in_europe.output
+        category = rules.category_of_technical_eligibility.output[0],
+        land_cover = rules.land_cover_in_europe.output[0],
+        protected_areas = rules.protected_areas_in_europe.output[0]
     params:
         scenario = lambda wildcards: config["scenarios"][wildcards.scenario]
     output:
@@ -211,13 +211,13 @@ rule areas:
         "Determine eligible areas for layer {wildcards.layer} in scenario {wildcards.scenario}."
     input:
         script = script_dir + "areas.py",
-        units = rules.units.output,
-        eez = rules.eez_in_europe.output,
-        shared_coast = rules.shared_coast.output,
-        area = rules.area_of_technical_eligibility.output,
-        category = rules.category_of_technical_eligibility.output,
-        land_cover = rules.land_cover_in_europe.output,
-        protected_areas = rules.protected_areas_in_europe.output
+        units = rules.units.output[0],
+        eez = rules.eez_in_europe.output[0],
+        shared_coast = rules.shared_coast.output[0],
+        area = rules.area_of_technical_eligibility.output[0],
+        category = rules.category_of_technical_eligibility.output[0],
+        land_cover = rules.land_cover_in_europe.output[0],
+        protected_areas = rules.protected_areas_in_europe.output[0]
     params:
         scenario = lambda wildcards: config["scenarios"][wildcards.scenario]
     output:
@@ -231,16 +231,16 @@ rule capacities:
         "Determine installable capacities for layer {wildcards.layer} in scenario {wildcards.scenario}."
     input:
         script = script_dir + "capacities.py",
-        units = rules.units.output,
-        eez = rules.eez_in_europe.output,
-        shared_coast = rules.shared_coast.output,
+        units = rules.units.output[0],
+        eez = rules.eez_in_europe.output[0],
+        shared_coast = rules.shared_coast.output[0],
         capacity_pv = rules.capacity_of_technical_eligibility.output.pv,
         capacity_wind = rules.capacity_of_technical_eligibility.output.wind,
         pv_yield = rules.electricity_yield_of_technical_eligibility.output.pv,
         wind_yield = rules.electricity_yield_of_technical_eligibility.output.wind,
-        category = rules.category_of_technical_eligibility.output,
-        land_cover = rules.land_cover_in_europe.output,
-        protected_areas = rules.protected_areas_in_europe.output
+        category = rules.category_of_technical_eligibility.output[0],
+        land_cover = rules.land_cover_in_europe.output[0],
+        protected_areas = rules.protected_areas_in_europe.output[0]
     params:
         scenario = lambda wildcards: config["scenarios"][wildcards.scenario]
     output:
