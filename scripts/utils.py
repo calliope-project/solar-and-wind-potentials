@@ -2,37 +2,8 @@
 import math
 from pathlib import Path
 
-import click
 import numpy as np
 import rasterio
-import yaml
-
-PATH_TO_CONFIGS = Path(__file__).parent / '..' / 'config'
-
-
-class Config(click.ParamType):
-    """A configuration parameter on the command line.
-
-    Configurations will always be read from the config directory.
-    """
-    name = "configuration"
-
-    def convert(self, value, param, ctx):
-        name_of_file = Path(value).name
-        path_to_file = PATH_TO_CONFIGS / name_of_file
-        return read_config(path_to_file)
-
-
-def read_config(path_to_file):
-    """Reads a configuration file."""
-    path_to_file = Path(path_to_file)
-    if not path_to_file.exists():
-        raise ValueError("Config {} does not exist.".format(path_to_file))
-    with path_to_file.open('r') as stream:
-        try:
-            return yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            raise IOError(exc)
 
 
 def determine_pixel_areas(crs, bounds, resolution):

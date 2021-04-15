@@ -1,7 +1,6 @@
 """Create maps of ids to capacity factor timeseries of renewables."""
 import math
 
-import click
 import numpy as np
 import geopandas as gpd
 import shapely
@@ -19,17 +18,13 @@ WGS84_PROJ4 = "+proj=longlat +datum=WGS84 +no_defs "
 WGS84 = "EPSG:4326"
 
 
-@click.command()
-@click.argument("path_to_timeseries")
-@click.argument("path_to_map")
-@click.argument("resolution_km", type=int)
 def id_map(path_to_timeseries, path_to_map, resolution_km):
     """Create maps of ids to capacity factor timeseries of renewables.
 
     Each point on the map links to a timeseries of capacity factors of renewables. Together with the
     timeseries, both files form the spatio-temporal data format used in this study.
     """
-    ds = xr.open_dataset(path_to_timeseries)
+    ds = xr.open_dataset(str(path_to_timeseries))
     pv_config = ds[["lat", "lon"]].to_dataframe()
     points = gpd.GeoDataFrame(
         geometry=[shapely.geometry.Point(row.lon, row.lat) for _, row in pv_config.iterrows()],
@@ -64,7 +59,7 @@ def id_map(path_to_timeseries, path_to_map, resolution_km):
         xsize=resolution_m,
         ysize=resolution_m
     )
-    with rasterio.open(path_to_map, 'w', driver='GTiff', height=height, width=width,
+    with rasterio.open(str(path_to_map), 'w', driver='GTiff', height=height, width=width,
                        count=1, dtype=DTYPE, crs=EPSG_3035, transform=transform,
                        nodata=NO_DATA_VALUE) as f_map:
         f_map.write(raster, 1)
@@ -75,4 +70,8 @@ def isclose(a, b):
 
 
 if __name__ == "__main__":
-    id_map()
+    id_map(
+        path_to_timeseries=snakemake.input.timeseries,
+        resolution_km=snakemake.params.resolution,
+        path_to_map=snakemake.output
+    )

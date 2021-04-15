@@ -8,32 +8,19 @@
 
 This is in analogy to `potentials.py` but for areas [km2] instead of potentials [TWh/a].
 """
-import click
 import numpy as np
 import pandas as pd
 import rasterio
 from rasterstats import zonal_stats
 import fiona
 
-from src.technical_eligibility import Eligibility, FOREST, FARM, OTHER
-from src.potentials import ProtectedArea
-from src.utils import Config
+from technical_eligibility import Eligibility, FOREST, FARM, OTHER
+from potentials import ProtectedArea
 
 
-@click.command()
-@click.argument("path_to_units")
-@click.argument("path_to_eez")
-@click.argument("path_to_shared_coast")
-@click.argument("path_to_eligible_area")
-@click.argument("path_to_eligibility_categories")
-@click.argument("path_to_land_cover")
-@click.argument("path_to_protected_areas")
-@click.argument("path_to_result")
-@click.argument("scenario")
-@click.argument("config", type=Config())
 def areas(path_to_units, path_to_eez, path_to_shared_coast, path_to_eligible_area,
           path_to_eligibility_categories, path_to_land_cover, path_to_protected_areas,
-          path_to_result, scenario, config):
+          scenario_config, path_to_result):
     """Determine available area of renewable electricity in each administrative unit.
 
     * Take the (only technically restricted) raster data potentials,
@@ -42,35 +29,35 @@ def areas(path_to_units, path_to_eez, path_to_shared_coast, path_to_eligible_are
     * allocate the offshore areas to exclusive economic zones (EEZ),
     * allocate the offshore areas of EEZ to units based on the fraction of shared coast.
     """
-    with rasterio.open(path_to_eligibility_categories, "r") as src:
+    with rasterio.open(str(path_to_eligibility_categories), "r") as src:
         category_map = src.read(1)
-    with rasterio.open(path_to_eligible_area, "r") as src:
+    with rasterio.open(str(path_to_eligible_area), "r") as src:
         transform = src.transform
         area_map = src.read(1)
-    with rasterio.open(path_to_land_cover, "r") as src:
+    with rasterio.open(str(path_to_land_cover), "r") as src:
         land_cover = src.read(1)
-    with rasterio.open(path_to_protected_areas, "r") as src:
+    with rasterio.open(str(path_to_protected_areas), "r") as src:
         protected_areas = src.read(1)
-    with fiona.open(path_to_units, "r") as src:
+    with fiona.open(str(path_to_units), "r") as src:
         unit_ids = [feature["properties"]["id"] for feature in src]
         unit_geometries = [feature["geometry"] for feature in src]
-    with fiona.open(path_to_eez, "r") as src:
+    with fiona.open(str(path_to_eez), "r") as src:
         eez_ids = [feature["properties"]["id"] for feature in src]
         eez_geometries = [feature["geometry"] for feature in src]
-    shared_coasts = pd.read_csv(path_to_shared_coast, index_col=0)
+    shared_coasts = pd.read_csv(str(path_to_shared_coast), index_col=0)
 
     area_map = apply_scenario_config_to_areas(
         area_map=area_map,
         category_map=category_map,
         land_cover=land_cover,
         protected_areas=protected_areas,
-        scenario_config=config["scenarios"][scenario]
+        scenario_config=scenario_config
     )
     category_map = apply_scenario_config_to_categories(
         category_map=category_map,
         land_cover=land_cover,
         protected_areas=protected_areas,
-        scenario_config=config["scenarios"][scenario]
+        scenario_config=scenario_config
     )
     onshore_areas = pd.DataFrame(
         index=unit_ids,
@@ -105,7 +92,7 @@ def areas(path_to_units, path_to_eez, path_to_shared_coast, path_to_eligible_are
     areas = pd.concat([onshore_areas, offshore_areas], axis=1)
     areas.index.name = "id"
     areas.to_csv(
-        path_to_result,
+        str(path_to_result),
         header=True,
         index=True
     )
@@ -176,4 +163,14 @@ def _area(eligibility_category, area_map, category_map, shapes, transform):
 
 
 if __name__ == "__main__":
-    areas()
+    areas(
+        path_to_units=snakemake.input.units,
+        path_to_eez=snakemake.input.eez,
+        path_to_shared_coast=snakemake.input.shared_coast,
+        path_to_eligible_area=snakemake.input.area,
+        path_to_eligibility_categories=snakemake.input.category,
+        path_to_land_cover=snakemake.input.land_cover,
+        path_to_protected_areas=snakemake.input.protected_areas,
+        scenario_config=snakemake.params.scenario,
+        path_to_result=snakemake.output[0]
+    )

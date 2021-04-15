@@ -1,11 +1,6 @@
 from snakemake.utils import validate
 
-PYTHON = "PYTHONPATH=./ python"
-PYTHON_SCRIPT = "PYTHONPATH=./ python {input} {output}"
-PYTHON_SCRIPT_WITH_CONFIG = PYTHON_SCRIPT + " {CONFIG_FILE}"
-
-CONFIG_FILE = "config/default.yaml"
-configfile: CONFIG_FILE
+configfile: "config/default.yaml"
 validate(config, "config/schema.yaml")
 
 include: "rules/data-preprocessing.smk"
@@ -15,6 +10,9 @@ include: "rules/potential.smk"
 include: "rules/sync.smk"
 
 localrules: all, clean
+root_dir = config["root-directory"] + "/" if config["root-directory"] not in ["", "."] else ""
+__version__ = open(f"{root_dir}VERSION").readlines()[0].strip()
+script_dir = f"{root_dir}scripts/"
 
 wildcard_constraints:
     layer = "({layer_list})".format(layer_list="|".join((f"({layer})" for layer in config["layers"]))),
