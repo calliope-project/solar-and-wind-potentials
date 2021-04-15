@@ -10,14 +10,14 @@ KOSOVO_MUNICIPALITIES = [f"RS{x:02d}" for x in range(1, 38)]
 
 def merge_lau(path_to_shapes, path_to_attributes, path_to_output):
     """Merge LAU shapes with attributes."""
-    shapes = gpd.read_file(str(path_to_shapes))
+    shapes = gpd.read_file(path_to_shapes)
     shapes.geometry = shapes.geometry.map(_to_multi_polygon)
-    attributes = gpd.read_file(str(path_to_attributes))
+    attributes = gpd.read_file(path_to_attributes)
     attributes = pd.DataFrame(attributes) # to be able to remove the geo information
     del attributes["geometry"]
     all_shapes = shapes.merge(attributes, on="COMM_ID", how="left")
     all_shapes_no_kosovo = _remove_kosovo(all_shapes)
-    all_shapes_no_kosovo.to_file(str(path_to_output), driver=OUTPUT_DRIVER)
+    all_shapes_no_kosovo.to_file(path_to_output, driver=OUTPUT_DRIVER)
 
 
 def _remove_kosovo(shapes):
@@ -34,5 +34,5 @@ if __name__ == "__main__":
     merge_lau(
         path_to_shapes=snakemake.input.shapes,
         path_to_attributes=snakemake.input.attributes,
-        path_to_output=snakemake.output
+        path_to_output=snakemake.output[0]
     )

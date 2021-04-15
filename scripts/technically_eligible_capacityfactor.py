@@ -8,18 +8,18 @@ def determine_capacityfactor(path_to_eligibility_categories, path_to_rooftop_pv_
                              path_to_wind_offshore_cf, availability,
                              path_to_output_pv_prio, path_to_output_wind_prio):
     """Determines capacity factors for each eligibility category on a map."""
-    with rasterio.open(str(path_to_eligibility_categories)) as src:
+    with rasterio.open(path_to_eligibility_categories) as src:
         eligibility_categories = src.read(1)
-    with rasterio.open(str(path_to_rooftop_pv_cf)) as src:
+    with rasterio.open(path_to_rooftop_pv_cf) as src:
         meta = src.meta
         rooftop_pv_cf = src.read(1)
-    with rasterio.open(str(path_to_open_field_pv_cf)) as src:
+    with rasterio.open(path_to_open_field_pv_cf) as src:
         open_field_pv_cf = src.read(1)
-    with rasterio.open(str(path_to_wind_onshore_cf)) as src:
+    with rasterio.open(path_to_wind_onshore_cf) as src:
         wind_onshore_cf = src.read(1)
         valid = wind_onshore_cf != meta["nodata"]
         wind_onshore_cf[valid] = wind_onshore_cf[valid] * availability["wind-onshore"]
-    with rasterio.open(str(path_to_wind_offshore_cf)) as src:
+    with rasterio.open(path_to_wind_offshore_cf) as src:
         wind_offshore_cf = src.read(1)
         valid = wind_offshore_cf != meta["nodata"]
         wind_offshore_cf[valid] = wind_offshore_cf[valid] * availability["wind-offshore"]
@@ -75,7 +75,7 @@ def _capacity_factor(eligibility, pv_prio, rooftop_pv_cf, open_field_pv_cf,
 
 
 def _write_to_file(path_to_file, data, meta):
-    with rasterio.open(str(path_to_file), 'w', **meta) as new_geotiff:
+    with rasterio.open(path_to_file, 'w', **meta) as new_geotiff:
         new_geotiff.write(data, 1)
 
 

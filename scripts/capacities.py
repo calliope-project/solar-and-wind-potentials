@@ -29,29 +29,29 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
     * allocate the offshore potentials to exclusive economic zones (EEZ),
     * allocate the offshore potential of EEZ to units based on the fraction of shared coast.
     """
-    with rasterio.open(str(path_to_eligibility_categories), "r") as src:
+    with rasterio.open(path_to_eligibility_categories, "r") as src:
         eligibility_categories = src.read(1)
-    with rasterio.open(str(path_to_capacities_pv_prio), "r") as src:
+    with rasterio.open(path_to_capacities_pv_prio, "r") as src:
         transform = src.transform
         capacities_pv_prio = src.read(1)
-    with rasterio.open(str(path_to_capacities_wind_prio), "r") as src:
+    with rasterio.open(path_to_capacities_wind_prio, "r") as src:
         capacities_wind_prio = src.read(1)
-    with rasterio.open(str(path_to_electricity_yield_pv_prio), "r") as src:
+    with rasterio.open(path_to_electricity_yield_pv_prio, "r") as src:
         transform = src.transform
         electricity_yield_pv_prio = src.read(1)
-    with rasterio.open(str(path_to_electricity_yield_wind_prio), "r") as src:
+    with rasterio.open(path_to_electricity_yield_wind_prio, "r") as src:
         electricity_yield_wind_prio = src.read(1)
-    with rasterio.open(str(path_to_land_cover), "r") as src:
+    with rasterio.open(path_to_land_cover, "r") as src:
         land_cover = src.read(1)
-    with rasterio.open(str(path_to_protected_areas), "r") as src:
+    with rasterio.open(path_to_protected_areas, "r") as src:
         protected_areas = src.read(1)
-    with fiona.open(str(path_to_units), "r") as src:
+    with fiona.open(path_to_units, "r") as src:
         unit_ids = [feature["properties"]["id"] for feature in src]
         unit_geometries = [feature["geometry"] for feature in src]
-    with fiona.open(str(path_to_eez), "r") as src:
+    with fiona.open(path_to_eez, "r") as src:
         eez_ids = [feature["properties"]["id"] for feature in src]
         eez_geometries = [feature["geometry"] for feature in src]
-    shared_coasts = pd.read_csv(str(path_to_shared_coast), index_col=0)
+    shared_coasts = pd.read_csv(path_to_shared_coast, index_col=0)
 
     capacities_pv_prio, capacities_wind_prio = apply_scenario_config(
         potential_pv_prio=capacities_pv_prio,
@@ -112,7 +112,7 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
     potentials = pd.concat([onshore_potentials, offshore_potentials], axis=1)
     potentials.index.name = "id"
     potentials.to_csv(
-        str(path_to_result),
+        path_to_result,
         header=True,
         index=True
     )
@@ -131,5 +131,5 @@ if __name__ == "__main__":
         path_to_land_cover=snakemake.input.land_cover,
         path_to_protected_areas=snakemake.input.protected_areas,
         scenario_config=snakemake.params.scenario,
-        path_to_result=snakemake.output
+        path_to_result=snakemake.output[0]
     )

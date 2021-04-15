@@ -25,7 +25,7 @@ rule pv_simulation_points:
     input:
         script = script_dir + "capacityfactors/ninja_input_pv.py",
         units = "build/continental/units.geojson",
-        roof_categories = rules.sonnendach_statistics.output
+        roof_categories = rules.sonnendach_statistics.output[0]
     params:
         bounds = config["scope"]["bounds"],
         ninja = config["parameters"]["ninja"],
