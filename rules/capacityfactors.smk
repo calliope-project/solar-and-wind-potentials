@@ -25,7 +25,7 @@ rule capacityfactor_id_map:
     message: "Create raster map of indices to time series for {wildcards.technology}."
     input:
         script = script_dir + "capacityfactors/id_map.py",
-        timeseries = "build/capacityfactors/{technology}-timeseries.nc"
+        timeseries = rules.capacityfactor_timeseries.output[0]
     output:
         temp("build/{technology}-ids-lowres.tif")
     shadow: "full"
@@ -38,7 +38,7 @@ rule capacityfactor_id_map:
 rule capacityfactor_id_map_warped_to_land_cover:
     message: "Warp raster map of indices for {wildcards.technology} to land cover map resolution."
     input:
-        id_map = "build/{technology}-ids-lowres.tif",
+        id_map = rules.capacityfactor_id_map.output[0],
         reference = "build/land-cover-europe.tif"
     output:
         "build/capacityfactors/{technology}-ids.tif"
@@ -51,8 +51,8 @@ rule time_average_capacityfactor_map:
     message: "Create raster map of average capacity factors for {wildcards.technology}."
     input:
         scripts = script_dir + "capacityfactors/averages_map.py",
-        id_map = "build/capacityfactors/{technology}-ids.tif",
-        timeseries = "build/capacityfactors/{technology}-timeseries.nc"
+        id_map = rules.capacityfactor_id_map_warped_to_land_cover.output[0],
+        timeseries = rules.capacityfactor_timeseries.output[0]
     output:
         "build/capacityfactors/{technology}-time-average.tif"
     conda: "../envs/default.yaml"
