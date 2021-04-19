@@ -2,7 +2,7 @@
 import geopandas as gpd
 import pandas as pd
 
-from administrative_borders import _to_multi_polygon
+from renewablepotentialslib.shape_utils import to_multi_polygon
 
 OUTPUT_DRIVER = "GeoJSON"
 KOSOVO_MUNICIPALITIES = [f"RS{x:02d}" for x in range(1, 38)]
@@ -11,7 +11,7 @@ KOSOVO_MUNICIPALITIES = [f"RS{x:02d}" for x in range(1, 38)]
 def merge_lau(path_to_shapes, path_to_attributes, path_to_output):
     """Merge LAU shapes with attributes."""
     shapes = gpd.read_file(path_to_shapes)
-    shapes.geometry = shapes.geometry.map(_to_multi_polygon)
+    shapes.geometry = shapes.geometry.map(to_multi_polygon)
     attributes = gpd.read_file(path_to_attributes)
     attributes = pd.DataFrame(attributes) # to be able to remove the geo information
     del attributes["geometry"]

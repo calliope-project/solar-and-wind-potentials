@@ -3,7 +3,7 @@ import numpy as np
 import rasterio
 import xarray as xr
 
-from timeseries import CAPACITY_FACTOR_VAR
+CAPACITY_FACTOR_VAR = "electricity"
 
 DTYPE = np.float32
 NODATA = -1

@@ -1,10 +1,13 @@
 import geopandas as gpd
-import shapely.geometry
-import shapely.errors
-import pycountry
 
-from renewablepotentialslib.conversion import eu_country_code_to_iso3
-from renewablepotentialslib.shape_utils import buffer_if_necessary
+from renewablepotentialslib.shape_utils import (
+    buffer_if_necessary,
+    to_multi_polygon,
+    drop_countries,
+    drop_geoms_completely_outside_study_area,
+    drop_parts_of_geoms_completely_outside_study_area,
+    update_features
+)
 
 OUTPUT_DRIVER = 'GPKG'
 SCHEMA = {
@@ -22,17 +25,16 @@ SCHEMA = {
 def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, crs, scope_config, path_to_output):
     """Normalises raw administrative boundary data and places it in one, layered geodatapackage."""
 
-    #lau
     for _src, _path in {
         'nuts': path_to_nuts, 'gadm': path_to_gadm, 'lau': path_to_lau
     }.items():
         gdf = gpd.read_file(_path)
         gdf = gdf.to_crs(crs)
-        gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(_to_multi_polygon)
-        gdf = _update_features(gdf, _src)
-        gdf = _drop_countries(gdf, scope_config)
-        gdf = _drop_geoms_completely_outside_study_area(gdf, scope_config)
-        gdf = _drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config)
+        gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(to_multi_polygon)
+        gdf = update_features(gdf, _src)
+        gdf = drop_countries(gdf, scope_config)
+        gdf = drop_geoms_completely_outside_study_area(gdf, scope_config)
+        gdf = drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config)
 
         assert gdf.id.duplicated().sum() == 0
 

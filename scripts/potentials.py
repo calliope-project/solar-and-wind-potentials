@@ -15,7 +15,7 @@ import rasterio
 from rasterstats import zonal_stats
 import fiona
 
-from renewablepotentialslib.eligibility import Eligibility, FOREST, FARM, OTHER
+from renewablepotentialslib.eligibility import Eligibility, ProtectedArea, Potential, FOREST, FARM, OTHER
 
 
 def potentials(path_to_units, path_to_eez, path_to_shared_coast,
