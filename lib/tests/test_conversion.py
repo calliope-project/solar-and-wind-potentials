@@ -3,8 +3,12 @@ import math
 
 import pytest
 
-from scripts.conversion import watt_to_watthours, eu_country_code_to_iso3, coordinate_string_to_decimal,\
+from renewablepotentialslib.conversion import (
+    watt_to_watthours,
+    eu_country_code_to_iso3,
+    coordinate_string_to_decimal,
     transform_coordinates
+)
 
 
 @pytest.mark.parametrize("watt,duration,expected_watthour", [
@@ -52,6 +56,7 @@ def test_coordinates_to_decimal_edgecases(arcminutes, expected_easting, expected
     assert math.isclose(northing, expected_northing, abs_tol=0.00001)
 
 
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "from_epsg,from_x,from_y,to_x,to_y",
     [("EPSG:4326", 8.55, 47.36, 4211389.55, 2695117.37), # values from epsg.io
@@ -67,7 +72,7 @@ def test_transform_coordinates_to_epsg3035(from_epsg, from_x, from_y, to_x, to_y
     assert math.isclose(x, to_x, abs_tol=0.1) # tolerance 0.1m
     assert math.isclose(y, to_y, abs_tol=0.1)
 
-
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "from_epsg,from_x,from_y,to_x,to_y",
     [("EPSG:4326", 92.4, 32.8, 8315488.22495176, 3969803.31307849), # values from epsg.io
@@ -84,7 +89,7 @@ def test_transform_coordinates_to_esri54009(from_epsg, from_x, from_y, to_x, to_
     assert math.isclose(x, to_x, abs_tol=0.1) # tolerance 0.1m
     assert math.isclose(y, to_y, abs_tol=0.1)
 
-
+@pytest.mark.filterwarnings("ignore::FutureWarning")
 @pytest.mark.parametrize(
     "from_epsg,to_x,to_y,from_x,from_y",
     [("EPSG:3035", 8.55, 47.36, 4211389.55, 2695117.37), # values from epsg.io

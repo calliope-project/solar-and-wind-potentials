@@ -8,7 +8,7 @@ import rasterio.mask
 from rasterstats import zonal_stats
 import fiona
 
-from scripts.technical_eligibility import Eligibility
+from renewablepotentialslib.eligibility import Eligibility
 
 ROOT_DIR = Path(os.path.abspath(__file__)).parent.parent
 PATH_TO_CATEGORIES = ROOT_DIR / "build" / "technically-eligible-land.tif"

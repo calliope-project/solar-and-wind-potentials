@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd
 import rasterio
 
-from technical_eligibility import Eligibility
+from renewablepotentialslib.eligibility import Eligibility
+
+
 def determine_capacities(
     path_to_eligibility_categories, path_to_eligible_areas, path_to_statistical_roof_model,
     maximum_installable_power_density, path_to_pv_prio_result, path_to_wind_prio_result

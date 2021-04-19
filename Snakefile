@@ -73,6 +73,18 @@ rule test:
         "py.test --html={output} --self-contained-html"
 
 
+rule build_metadata:
+    message: "Generate build metadata."
+    input:
+        script = script_dir + "metadata.py"
+    params:
+        config = config,
+        version = __version__
+    output: "build/model/build-metadata.yaml"
+    conda: "envs/metadata.yaml"
+    script: "scripts/metadata.py"
+
+
 def trigger_pushcut(event_name, secret):
     import requests
     response = requests.post(

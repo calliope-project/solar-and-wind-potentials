@@ -9,73 +9,20 @@
 This is in analogy to `areas.py` but for potentials [TWh/a] rather than areas [km2] .
 """
 
-from enum import IntEnum, Enum
-
 import numpy as np
 import pandas as pd
 import rasterio
 from rasterstats import zonal_stats
 import fiona
 
-from technical_eligibility import Eligibility, FOREST, FARM, OTHER
-
-
-class ProtectedArea(IntEnum):
-    """Derived from UNEP-WCMC data set."""
-    PROTECTED = 255
-    NOT_PROTECTED = 0
-
-
-class Potential(Enum):
-    """Classes of renewable electricity potentials."""
-    ROOFTOP_PV = (1, [Eligibility.ROOFTOP_PV])
-    OPEN_FIELD_PV = (2, [Eligibility.ONSHORE_WIND_AND_PV])
-    ONSHORE_WIND = (3, [Eligibility.ONSHORE_WIND_AND_PV, Eligibility.ONSHORE_WIND])
-    OFFSHORE_WIND = (4, [Eligibility.OFFSHORE_WIND])
-
-    def __init__(self, int_id, corresponding_eligibilities):
-        self.int_id = int_id
-        self.eligible_on = corresponding_eligibilities
-
-    @property
-    def area_name(self):
-        return "{}_km2".format(self.name.lower())
-
-    @property
-    def capacity_name(self):
-        return "{}_mw".format(self.name.lower())
-
-    @property
-    def electricity_yield_name(self):
-        return "{}_twh_per_year".format(self.name.lower())
-
-    @staticmethod
-    def onshore():
-        """Returns all onshore potentials."""
-        return [
-            Potential.ROOFTOP_PV,
-            Potential.OPEN_FIELD_PV,
-            Potential.ONSHORE_WIND,
-        ]
-
-    @staticmethod
-    def offshore():
-        """Returns all offshore potentials."""
-        return [
-            Potential.OFFSHORE_WIND
-        ]
-
-    def __repr__(self):
-        return self.electricity_yield_name
-
-    def __str__(self):
-        return self.__repr__()
+from renewablepotentialslib.eligibility import Eligibility, FOREST, FARM, OTHER
 
 
 def potentials(path_to_units, path_to_eez, path_to_shared_coast,
+               path_to_capacities_pv_prio, path_to_capacities_wind_prio,
                path_to_electricity_yield_pv_prio, path_to_electricity_yield_wind_prio,
                path_to_eligibility_categories, path_to_land_cover, path_to_protected_areas,
-               scenario_config, path_to_result):
+               scenario_config, metric, path_to_result):
     """Determine potential of renewable electricity in each administrative unit.
 
     * Take the (only technically restricted) raster data potentials,
@@ -102,7 +49,6 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
         eez_ids = [feature["properties"]["id"] for feature in src]
         eez_geometries = [feature["geometry"] for feature in src]
     shared_coasts = pd.read_csv(path_to_shared_coast, index_col=0)
-
     electricity_yield_pv_prio, electricity_yield_wind_prio = apply_scenario_config(
         potential_pv_prio=electricity_yield_pv_prio,
         potential_wind_prio=electricity_yield_wind_prio,
@@ -111,9 +57,28 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
         protected_areas=protected_areas,
         scenario_config=scenario_config
     )
-    electricity_yield_pv_prio, electricity_yield_wind_prio = decide_between_pv_and_wind(
-        potential_pv_prio=electricity_yield_pv_prio,
-        potential_wind_prio=electricity_yield_wind_prio,
+    if metric == "capacity":
+        with rasterio.open(path_to_capacities_pv_prio, "r") as src:
+            transform = src.transform
+            capacities_pv_prio = src.read(1)
+        with rasterio.open(path_to_capacities_wind_prio, "r") as src:
+            capacities_wind_prio = src.read(1)
+
+        potential_pv_prio, potential_wind_prio = apply_scenario_config(
+            potential_pv_prio=capacities_pv_prio,
+            potential_wind_prio=capacities_wind_prio,
+            categories=eligibility_categories,
+            land_cover=land_cover,
+            protected_areas=protected_areas,
+            scenario_config=scenario_config
+        )
+    elif metric == "electricity_yield":
+        potential_pv_prio = electricity_yield_pv_prio
+        potential_wind_prio = electricity_yield_wind_prio
+
+    capacities_pv_prio, capacities_wind_prio = decide_between_pv_and_wind(
+        potential_pv_prio=potential_pv_prio,
+        potential_wind_prio=potential_wind_prio,
         electricity_yield_pv_prio=electricity_yield_pv_prio,
         electricity_yield_wind_prio=electricity_yield_wind_prio,
         eligibility_categories=eligibility_categories
@@ -122,10 +87,10 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
     onshore_potentials = pd.DataFrame(
         index=unit_ids,
         data={
-            potential: potentials_per_shape(
+            getattr(potential, f"{metric}_name"): potentials_per_shape(
                 eligibilities=potential.eligible_on,
-                potential_map=(electricity_yield_pv_prio if "pv" in str(potential).lower()
-                               else electricity_yield_wind_prio),
+                potential_map=(capacities_pv_prio if "pv" in str(potential).lower()
+                               else capacities_wind_prio),
                 eligibility_categories=eligibility_categories,
                 shapes=unit_geometries,
                 transform=transform
@@ -136,10 +101,10 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
     offshore_eez_potentials = pd.DataFrame(
         index=eez_ids,
         data={
-            potential: potentials_per_shape(
+            getattr(potential, f"{metric}_name"): potentials_per_shape(
                 eligibilities=potential.eligible_on,
-                potential_map=(electricity_yield_pv_prio if "pv" in str(potential).lower()
-                               else electricity_yield_wind_prio),
+                potential_map=(capacities_pv_prio if "pv" in str(potential).lower()
+                               else capacities_wind_prio),
                 eligibility_categories=eligibility_categories,
                 shapes=eez_geometries,
                 transform=transform
@@ -149,7 +114,7 @@ def potentials(path_to_units, path_to_eez, path_to_shared_coast,
     )
     offshore_potentials = pd.DataFrame(
         data=shared_coasts.dot(offshore_eez_potentials),
-        columns=Potential.offshore()
+        columns=[getattr(potential, f"{metric}_name") for potential in Potential.offshore()]
     )
     potentials = pd.concat([onshore_potentials, offshore_potentials], axis=1)
     potentials.index.name = "id"
@@ -242,11 +207,14 @@ if __name__ == "__main__":
         path_to_units=snakemake.input.units,
         path_to_eez=snakemake.input.eez,
         path_to_shared_coast=snakemake.input.shared_coast,
+        path_to_capacities_pv_prio=snakemake.input.get("pv_capacity", None),
+        path_to_capacities_wind_prio=snakemake.input.get("wind_capacity", None),
         path_to_electricity_yield_pv_prio=snakemake.input.pv_yield,
         path_to_electricity_yield_wind_prio=snakemake.input.wind_yield,
         path_to_eligibility_categories=snakemake.input.category,
         path_to_land_cover=snakemake.input.land_cover,
         path_to_protected_areas=snakemake.input.protected_areas,
         scenario_config=snakemake.params.scenario,
+        metric=snakemake.params.potential_metric,
         path_to_result=snakemake.output[0]
     )

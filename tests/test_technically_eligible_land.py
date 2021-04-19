@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from scripts.technical_eligibility import Eligibility, _determine_eligibility, GlobCover
-
+from scripts.technical_eligibility import _determine_eligibility
+from renewablepotentialslib.eligibility import Eligibility, GlobCover
 
 @pytest.fixture
 def config():

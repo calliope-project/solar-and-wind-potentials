@@ -1,0 +1,9 @@
+name: default
+channels:
+    - conda-forge
+dependencies:
+    - python=3.6
+    - pyyaml=5.1
+    - pip:
+        - pytest-pythonpath # adds the root path "./" to PYTHONPATH
+        - -e ../../lib
