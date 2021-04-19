@@ -21,7 +21,7 @@ jobs:
               run: |
                 cd ./lib
                 conda env create -f requirements-test.yaml
-                conda activate renewablepotentialslib-test
             - name: Test with pytest
               run: |
+                conda activate renewablepotentialslib-test
                 pytest ./lib
