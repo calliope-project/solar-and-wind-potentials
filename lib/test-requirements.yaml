@@ -1,5 +1,5 @@
 name:
-    renewablepotentialslib-test
+    test-renewablepotentialslib
 channels:
     - conda-forge
 dependencies:
@@ -7,10 +7,9 @@ dependencies:
     - pip=19.1.1
     - pytest=3.2.3
     - pycountry=20.7.3
-    - gdal=2.4
-    - rasterio=1.0.25
     - geopandas=0.8.1
     - numpy=1.14.6
     - pandas=0.23.2
+    - shapely=1.7.1
     - pip:
         -e .

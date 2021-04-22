@@ -19,5 +19,4 @@ dependencies:
     - pycountry=20.7.3
     - pip=19.1.1
     - pip:
-        - pytest-pythonpath # adds the root path "./" to PYTHONPATH
         - -e ../../lib

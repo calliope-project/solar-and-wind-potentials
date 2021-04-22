@@ -1,8 +1,7 @@
 import pytest
 import numpy as np
 
-from scripts.technical_eligibility import _determine_eligibility
-from renewablepotentialslib.eligibility import Eligibility, GlobCover
+from renewablepotentialslib.eligibility import determine_eligibility, Eligibility, GlobCover
 
 @pytest.fixture
 def config():
@@ -45,7 +44,7 @@ def test_eligibility(land_cover, slope, bathymetry, building_share, urban_green_
     max_depth_offshore = config["max-depth-offshore"]
     max_building_share = config["max-building-share"]
     max_urban_green_share = config["max-urban-green-share"]
-    result = _determine_eligibility(
+    result = determine_eligibility(
         land_cover=np.array([land_cover]),
         slope=np.array([slope]),
         bathymetry=np.array([bathymetry]),

@@ -5,9 +5,8 @@ import numpy as np
 import geopandas as gpd
 import numpy as np
 import shapely
-#import rasterio
 import pycountry
-
+import pyproj
 
 from renewablepotentialslib.conversion import transform_bounds, eu_country_code_to_iso3
 from renewablepotentialslib import EPSG_3035, EPSG_3035_PROJ4, WGS84, WGS84_PROJ4
@@ -25,7 +24,7 @@ def determine_pixel_areas(crs, bounds, resolution):
     """
     # the following is based on https://gis.stackexchange.com/a/288034/77760
     # and assumes the data to be in WGS84
-    #assert crs == rasterio.crs.CRS.from_epsg("4326") # WGS84
+    assert crs == pyproj.cr.CRS(WGS84)
     width = int((bounds.right - bounds.left) / resolution)
     height = int((bounds.top - bounds.bottom) / resolution)
     latitudes = np.linspace(

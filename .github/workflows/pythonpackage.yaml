@@ -16,12 +16,7 @@ jobs:
               with:
                 auto-update-conda: true
                 python-version: 3.6
-                add-pip-as-python-dependency: true
-            - name: Install renewablepotentialslib and test requirements.
-              run: |
-                cd ./lib
-                conda env create -f requirements-test.yaml
+                activate-environment: test-renewablepotentialslib
+                environment-file: lib/test-requirements.yaml
             - name: Test with pytest
-              run: |
-                conda activate renewablepotentialslib-test
-                pytest ./lib
+              run: pytest ./lib
