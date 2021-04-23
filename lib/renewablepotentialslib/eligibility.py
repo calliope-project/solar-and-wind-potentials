@@ -128,7 +128,7 @@ class Potential(Enum):
         return self.__repr__()
 
 
-def determine_eligibility(
+def eligibility_land_mask(
     land_cover, slope, bathymetry, building_share, urban_green_share,
     max_slope, max_building_share, max_urban_green_share, max_depth_offshore
 ):

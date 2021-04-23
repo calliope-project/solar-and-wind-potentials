@@ -6,7 +6,7 @@ In here, we only exclude areas based on technical restrictions.
 import numpy as np
 import rasterio
 
-from renewablepotentialslib.eligibility import determine_eligibility, DATATYPE
+from renewablepotentialslib.eligibility import eligibility_land_mask, DATATYPE
 
 
 def determine_eligibility(path_to_land_cover, path_to_slope, path_to_bathymetry,
@@ -25,7 +25,7 @@ def determine_eligibility(path_to_land_cover, path_to_slope, path_to_bathymetry,
         building_share = src.read(1)
     with rasterio.open(path_to_urban_green_share) as src:
         urban_green_share = src.read(1)
-    eligibility = determine_eligibility(
+    eligibility = eligibility_land_mask(
         land_cover=land_cover,
         slope=slope,
         bathymetry=bathymetry,

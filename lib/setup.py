@@ -12,8 +12,6 @@ setup(
     include_package_data=True,
     install_requires=[
         "pycountry",
-        "gdal",
-        "rasterio",
         "geopandas",
         "numpy",
         "pandas",

@@ -3,7 +3,6 @@ import math
 
 import numpy as np
 import geopandas as gpd
-import numpy as np
 import shapely
 import pycountry
 import pyproj
@@ -24,7 +23,7 @@ def determine_pixel_areas(crs, bounds, resolution):
     """
     # the following is based on https://gis.stackexchange.com/a/288034/77760
     # and assumes the data to be in WGS84
-    assert crs == pyproj.cr.CRS(WGS84)
+    assert pyproj.crs.CRS(crs) == pyproj.crs.CRS(WGS84)
     width = int((bounds.right - bounds.left) / resolution)
     height = int((bounds.top - bounds.bottom) / resolution)
     latitudes = np.linspace(
