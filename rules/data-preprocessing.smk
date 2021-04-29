@@ -1,5 +1,6 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
+from renewablepotentialslib.rule_utils import collect_shape_dirs
 
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
@@ -89,24 +90,11 @@ rule administrative_borders_lau:
     script: "../scripts/lau.py"
 
 
-def collect_shape_dirs():
-    _strip = "0123456789"
-    shapes = set(shape.rstrip(_strip) for layer in config["layers"].values() for shape in layer.values())
-    inputs = {}
-    for shape in shapes:
-        if shape in ["nuts", "gadm", "lau"]:
-            inputs[shape] = getattr(rules, f"administrative_borders_{shape}").output[0]
-        else:
-            inputs[shape] = config["data-sources"][shape]
-    print(inputs)
-    return inputs
-
-
 rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
         src = script_dir + "administrative_borders.py",
-        **collect_shape_dirs()
+        **collect_shape_dirs(config, rules)
     params:
         crs = config["crs"],
         scope = config["scope"]

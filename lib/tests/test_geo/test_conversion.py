@@ -6,7 +6,7 @@ import pytest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from renewablepotentialslib.conversion import (
+from renewablepotentialslib.geo.conversion import (
     watt_to_watthours,
     eu_country_code_to_iso3,
     coordinate_string_to_decimal,

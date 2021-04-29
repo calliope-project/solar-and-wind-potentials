@@ -7,8 +7,8 @@ import shapely
 import pycountry
 import pyproj
 
-from renewablepotentialslib.conversion import transform_bounds, eu_country_code_to_iso3
-from renewablepotentialslib import EPSG_3035, EPSG_3035_PROJ4, WGS84, WGS84_PROJ4
+from renewablepotentialslib.geo.conversion import transform_bounds, eu_country_code_to_iso3
+from renewablepotentialslib.geo import EPSG_3035, EPSG_3035_PROJ4, WGS84, WGS84_PROJ4
 
 
 def determine_pixel_areas(crs, bounds, resolution):

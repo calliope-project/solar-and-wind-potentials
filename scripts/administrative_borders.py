@@ -1,6 +1,6 @@
 import geopandas as gpd
 
-from renewablepotentialslib.shape_utils import (
+from renewablepotentialslib.geo.shape_utils import (
     buffer_if_necessary,
     to_multi_polygon,
     drop_countries,

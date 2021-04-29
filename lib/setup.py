@@ -10,14 +10,17 @@ setup(
     maintainer_email='tim.troendle@usys.ethz.ch',
     packages=find_packages(exclude=['tests*']),
     include_package_data=True,
-    install_requires=[
-        "pycountry",
-        "geopandas",
-        "numpy",
-        "pandas",
-        "shapely",
-        "pyproj"
-    ],
+    install_requires=["numpy"],
+    extras_require={
+        'geo': [
+            "pycountry",
+            "geopandas",
+            "numpy",
+            "pandas",
+            "shapely",
+            "pyproj"
+        ],
+    },
     classifiers=[
         'Environment :: Console',
         'Intended Audience :: Science/Research',

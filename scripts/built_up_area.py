@@ -4,7 +4,7 @@ import rasterio
 from rasterstats import zonal_stats
 import pandas as pd
 
-from renewablepotentialslib.shape_utils import determine_pixel_areas
+from renewablepotentialslib.geo.shape_utils import determine_pixel_areas
 
 
 def built_up_areas(path_to_built_up_share, path_to_units, path_to_result):

@@ -2,7 +2,7 @@
 import geopandas as gpd
 import pandas as pd
 
-from renewablepotentialslib.shape_utils import to_multi_polygon
+from renewablepotentialslib.geo.shape_utils import to_multi_polygon
 
 OUTPUT_DRIVER = "GeoJSON"
 KOSOVO_MUNICIPALITIES = [f"RS{x:02d}" for x in range(1, 38)]
