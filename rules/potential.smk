@@ -199,7 +199,8 @@ rule potentials:
         land_cover = rules.land_cover_in_europe.output[0],
         protected_areas = rules.protected_areas_in_europe.output[0]
     params:
-        scenario = lambda wildcards: config["scenarios"][wildcards.scenario]
+        scenario = lambda wildcards: config["scenarios"][wildcards.scenario],
+        potential_metric = "electricity_yield"
     output:
         "build/{layer}/{scenario}/potentials.csv"
     conda: "../envs/default.yaml"
@@ -230,20 +231,21 @@ rule capacities:
     message:
         "Determine installable capacities for layer {wildcards.layer} in scenario {wildcards.scenario}."
     input:
-        script = script_dir + "capacities.py",
+        script = script_dir + "potentials.py",
         units = rules.units.output[0],
         eez = rules.eez_in_europe.output[0],
         shared_coast = rules.shared_coast.output[0],
-        capacity_pv = rules.capacity_of_technical_eligibility.output.pv,
-        capacity_wind = rules.capacity_of_technical_eligibility.output.wind,
+        pv_capacity = rules.capacity_of_technical_eligibility.output.pv,
+        wind_capacity = rules.capacity_of_technical_eligibility.output.wind,
         pv_yield = rules.electricity_yield_of_technical_eligibility.output.pv,
         wind_yield = rules.electricity_yield_of_technical_eligibility.output.wind,
         category = rules.category_of_technical_eligibility.output[0],
         land_cover = rules.land_cover_in_europe.output[0],
         protected_areas = rules.protected_areas_in_europe.output[0]
     params:
-        scenario = lambda wildcards: config["scenarios"][wildcards.scenario]
+        scenario = lambda wildcards: config["scenarios"][wildcards.scenario],
+        potential_metric = "electricity_yield"
     output:
         "build/{layer}/{scenario}/capacities.csv"
     conda: "../envs/default.yaml"
-    script: "../scripts/capacities.py"
+    script: "../scripts/potentials.py"

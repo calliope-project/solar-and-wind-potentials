@@ -1,21 +1,18 @@
 import pytest
 import numpy as np
 
-from scripts.technical_eligibility import Eligibility, _determine_eligibility, GlobCover
-
+from renewablepotentialslib.eligibility import eligibility_land_mask, Eligibility, GlobCover
 
 @pytest.fixture
 def config():
     return {
-        "parameters": {
-            "max-slope": {
-                "pv": 3,
-                "wind": 20
-            },
-            "max-depth-offshore": -50,
-            "max-building-share": 0.1,
-            "max-urban-green-share": 0.1
-        }
+        "max-slope": {
+            "pv": 3,
+            "wind": 20
+        },
+        "max-depth-offshore": -50,
+        "max-building-share": 0.1,
+        "max-urban-green-share": 0.1
     }
 
 
@@ -43,12 +40,19 @@ def config():
 )
 def test_eligibility(land_cover, slope, bathymetry, building_share, urban_green_share,
                      expected, config):
-    result = _determine_eligibility(
+    max_slope = config["max-slope"]
+    max_depth_offshore = config["max-depth-offshore"]
+    max_building_share = config["max-building-share"]
+    max_urban_green_share = config["max-urban-green-share"]
+    result = eligibility_land_mask(
         land_cover=np.array([land_cover]),
         slope=np.array([slope]),
         bathymetry=np.array([bathymetry]),
         building_share=np.array([building_share]),
         urban_green_share=np.array([urban_green_share]),
-        config=config
+        max_slope=max_slope,
+        max_depth_offshore=max_depth_offshore,
+        max_building_share=max_building_share,
+        max_urban_green_share=max_urban_green_share
     )
     assert Eligibility(result[0]) == expected

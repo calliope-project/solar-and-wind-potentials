@@ -17,8 +17,7 @@ import shapely.geometry
 import shapely.ops
 import pyproj
 
-# from https://epsg.io/3035
-EPSG_3035_PROJ4 = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs "
+from renewablepotentialslib import EPSG_3035_PROJ4
 
 
 def watt_to_watthours(watt, duration):
@@ -131,3 +130,42 @@ def _split_coordinate(coordinate_string):
 
 def _to_decimal_degree(degrees, arcminutes, arcseconds):
     return degrees + arcminutes / 60 + arcseconds / 3600
+
+
+def area_to_capacity(statistical_roof_model_area_based, power_density_flat, power_density_tilted):
+    """Maps area shares to capacity shares of statistical roof model.
+
+    The statistical roof model defines roof categories (e.g. south-facing with tilt 10°) and their
+    shares in a population of roofs. This function maps areas shares to shares of installable pv
+    capacity. It discriminates between flat and tilted roofs, i.e. the power density of flat roofs
+    can be different than the one from tilted roofs.
+
+    Parameters:
+        * statistical_roof_model_area_based: model as described above, values are shares of total roof area
+        * power_density_flat: power density of flat pv installations, unit must be consistent with next
+        * power_density_tilted: power density of tilted pv installations, unit must be consistent with previous
+    Returns:
+        * statistical_roof_model_cpacity_based: model as described above, values are shares of total
+        installable capacity
+    """
+    cap_based = statistical_roof_model_area_based.copy()
+    flat_roofs = cap_based.index.get_level_values(0) == "flat"
+    tilted_roofs = cap_based.index.get_level_values(0) != "flat"
+    cap_based[flat_roofs] = cap_based[flat_roofs] * power_density_flat
+    cap_based[tilted_roofs] = cap_based[tilted_roofs] * power_density_tilted
+    return cap_based / cap_based.sum()
+
+
+def orientation_to_azimuth(orientation):
+    if orientation == "S":
+        return 180
+    elif orientation == "W":
+        return -90
+    elif orientation == "N":
+        return 0
+    elif orientation == "E":
+        return 90
+    elif orientation == "flat":
+        return 180
+    else:
+        raise ValueError()

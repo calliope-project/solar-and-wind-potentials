@@ -9,8 +9,7 @@ import math
 import geopandas as gpd
 import pycountry
 
-# from https://epsg.io/3035
-EPSG_3035_PROJ4 = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs "
+from renewablepotentialslib import EPSG_3035_PROJ4
 
 
 def estimate_shapes(path_to_input, scope_config, path_to_output):

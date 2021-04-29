@@ -8,7 +8,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.prepared import prep
 
-import utils
+from renewablepotentialslib.shape_utils import buffer_if_necessary
 
 DRIVER = "GeoJSON"
 
@@ -18,7 +18,7 @@ def allocate_eezs(path_to_units, path_to_eezs, path_to_output, threads):
     units = gpd.read_file(path_to_units)
     units.set_index("id", inplace=True)
     eezs = gpd.read_file(path_to_eezs)
-    eezs.geometry = eezs.geometry.map(utils.buffer_if_necessary)
+    eezs.geometry = eezs.geometry.map(buffer_if_necessary)
     with Pool(int(threads)) as pool:
         share_of_coast_length = pool.map(
             _share_of_coast_length,

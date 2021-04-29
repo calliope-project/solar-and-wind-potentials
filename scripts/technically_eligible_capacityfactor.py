@@ -2,7 +2,9 @@
 import numpy as np
 import rasterio
 
-from technical_eligibility import Eligibility
+from renewablepotentialslib.eligibility import Eligibility
+
+
 def determine_capacityfactor(path_to_eligibility_categories, path_to_rooftop_pv_cf,
                              path_to_open_field_pv_cf, path_to_wind_onshore_cf,
                              path_to_wind_offshore_cf, availability,
