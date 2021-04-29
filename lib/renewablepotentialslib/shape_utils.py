@@ -168,7 +168,8 @@ def update_features(gdf, src):
 def drop_countries(gdf, scope_config):
     countries = [pycountry.countries.lookup(i).alpha_3 for i in scope_config["countries"]]
     _not_in = set(gdf.country_code).difference(countries)
-    print(f"Removing {_not_in} as they are outside of study area.")
+    if _not_in:
+        print(f"Removing {_not_in} as they are outside of study area.")
 
     return gdf[gdf.country_code.isin(countries)]
 

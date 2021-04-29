@@ -34,7 +34,7 @@ rule raw_gadm_administrative_borders:
     shell: "unzip -o {input} -d build/raw-gadm"
 
 
-rule all_gadm_administrative_borders:
+rule administrative_borders_gadm:
     message: "Merge gadm administrative borders of all countries."
     input:
         ["build/raw-gadm/gadm36_{}.gpkg".format(country_code)
@@ -47,7 +47,7 @@ rule all_gadm_administrative_borders:
     shell: "ogrmerge.py -o {output} -f gpkg -src_layer_field_content '{{LAYER_NAME}}' -t_srs {params.crs} -single {input}"
 
 
-rule raw_nuts_units:
+rule administrative_borders_nuts:
     message: "Download NUTS units as GeoJSON."
     output:
         protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
@@ -89,13 +89,24 @@ rule administrative_borders_lau:
     script: "../scripts/lau.py"
 
 
+def collect_shape_dirs():
+    _strip = "0123456789"
+    shapes = set(shape.rstrip(_strip) for layer in config["layers"].values() for shape in layer.values())
+    inputs = {}
+    for shape in shapes:
+        if shape in ["nuts", "gadm", "lau"]:
+            inputs[shape] = getattr(rules, f"administrative_borders_{shape}").output[0]
+        else:
+            inputs[shape] = config["data-sources"][shape]
+    print(inputs)
+    return inputs
+
+
 rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
         src = script_dir + "administrative_borders.py",
-        nuts_geojson = rules.raw_nuts_units.output[0],
-        gadm_gpkg = rules.all_gadm_administrative_borders.output[0],
-        lau_gpkg = rules.administrative_borders_lau.output[0]
+        **collect_shape_dirs()
     params:
         crs = config["crs"],
         scope = config["scope"]
