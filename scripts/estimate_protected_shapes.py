@@ -9,7 +9,7 @@ import math
 import geopandas as gpd
 import pycountry
 
-from renewablepotentialslib import EPSG_3035_PROJ4
+from renewablepotentialslib.geo import EPSG_3035_PROJ4
 
 
 def estimate_shapes(path_to_input, scope_config, path_to_output):
