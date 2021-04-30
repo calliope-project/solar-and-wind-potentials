@@ -1,22 +1,6 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
 
-URL_LOAD = "https://data.open-power-system-data.org/time_series/2018-06-30/time_series_60min_stacked.csv"
-URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_01M_{}_4326.geojson"
-URL_LAU = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip"
-URL_DEGURBA = "http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip"
-URL_LAND_COVER = "http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip"
-URL_PROTECTED_AREAS = "http://d1gam3xoknrgr2.cloudfront.net/current/WDPA_{}_Public_shp.zip"
-URL_CGIAR_TILE = "http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/"
-URL_GMTED_TILE = "https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED/075darcsec/mea/"
-URL_GADM = "https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/"
-URL_BATHYMETRIC = "https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip"
-URL_POP = "http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_250/V1-0/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0.zip"
-
-
-RAW_SETTLEMENT_DATA = "data/esm-100m-2017/ESM_class{esm_class}_100m.tif"
-RAW_EEZ_DATA = "data/World_EEZ_v10_20180221/eez_v10.shp"
-
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
 
@@ -27,6 +11,9 @@ SRTM_Y_MAX = 8
 GMTED_Y = ["50N", "70N"]
 GMTED_X = ["030W", "000E", "030E"]
 
+root_dir = config["root-directory"] + "/" if config["root-directory"] not in ["", "."] else ""
+script_dir = f"{root_dir}scripts/"
+
 localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
     raw_lau_units_zipped, raw_land_cover_zipped,
     raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
@@ -35,12 +22,13 @@ localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
 
 rule raw_gadm_administrative_borders_zipped:
     message: "Download administrative borders for {wildcards.country_code} as zip."
+    params: url = lambda wildcards: config["data-sources"]["gadm"].format(country_code=wildcards.country_code)
     output: protected("data/automatic/raw-gadm/{country_code}.zip")
-    shell: "curl -sLo {output} '{URL_GADM}/gadm36_{wildcards.country_code}_gpkg.zip'"
+    shell: "curl -sLo {output} '{params.url}'"
 
 
 rule raw_gadm_administrative_borders:
-    message: "Unzip administrative borders of {wildcards.country_code} as zip."
+    message: "Unzip administrative borders of {wildcards.country_code}."
     input: "data/automatic/raw-gadm/{country_code}.zip"
     output: temp("build/raw-gadm/gadm36_{country_code}.gpkg")
     shell: "unzip -o {input} -d build/raw-gadm"
@@ -64,7 +52,7 @@ rule raw_nuts_units:
     output:
         protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
     params:
-        url = URL_NUTS.format(config["parameters"]["nuts-year"])
+        url = config["data-sources"]["nuts"].format(nuts_year=config["parameters"]["nuts-year"])
     shell:
         "curl -sLo {output} '{params.url}'"
 
@@ -73,45 +61,56 @@ rule raw_lau_units_zipped:
     message: "Download LAU units as zip."
     output:
         protected("data/automatic/raw-lau-units.zip")
+    params: url = config["data-sources"]["lau"]
     shell:
-        "curl -sLo {output} '{URL_LAU}'"
+        "curl -sLo {output} '{params.url}'"
+
+
+rule raw_lau_units_unzipped:
+    message: "Unzip LAU units."
+    input:
+        zip = rules.raw_lau_units_zipped.output
+    output:
+        shapes = "build/raw-lau-units/COMM_RG_01M_2013.shp",
+        attributes = "build/raw-lau-units/COMM_AT_2013.dbf"
+    shell: "unzip -j {input.zip} -d build/raw-lau-units"
 
 
 rule administrative_borders_lau:
     message: "Normalise LAU administrative borders."
     input:
-        src = "src/lau.py",
-        zip = rules.raw_lau_units_zipped.output
+        src = script_dir + "lau.py",
+        shapes = rules.raw_lau_units_unzipped.output.shapes,
+        attributes = rules.raw_lau_units_unzipped.output.attributes,
     output:
         temp("build/raw-lau.gpkg")
     shadow: "full"
     conda: "../envs/default.yaml"
-    shell:
-        """
-        unzip {input.zip} -d ./build
-        {PYTHON} {input.src} merge ./build/COMM_01M_2013_SH/data/COMM_RG_01M_2013.shp \
-        ./build/COMM_01M_2013_SH/data/COMM_AT_2013.dbf ./build/raw-lau.gpkg
-        """
+    script: "../scripts/lau.py"
 
 
 rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
-        src = "src/administrative_borders.py",
-        nuts_geojson = rules.raw_nuts_units.output,
-        gadm_gpkg = rules.all_gadm_administrative_borders.output,
-        lau_gpkg = rules.administrative_borders_lau.output
+        src = script_dir + "administrative_borders.py",
+        nuts_geojson = rules.raw_nuts_units.output[0],
+        gadm_gpkg = rules.all_gadm_administrative_borders.output[0],
+        lau_gpkg = rules.administrative_borders_lau.output[0]
+    params:
+        crs = config["crs"],
+        scope = config["scope"]
     output:
         "build/administrative-borders.gpkg"
     shadow: "full"
     conda: "../envs/default.yaml"
-    shell: "{PYTHON} {input.src} {input.nuts_geojson} {input.gadm_gpkg} {input.lau_gpkg} {output} {CONFIG_FILE}"
+    script: "../scripts/administrative_borders.py"
 
 
 rule raw_land_cover_zipped:
     message: "Download land cover data as zip."
     output: protected("data/automatic/raw-globcover2009.zip")
-    shell: "curl -sLo {output} '{URL_LAND_COVER}'"
+    params: url = config["data-sources"]["land_cover"]
+    shell: "curl -sLo {output} '{url}'"
 
 
 rule raw_land_cover:
@@ -125,8 +124,7 @@ rule raw_land_cover:
 rule raw_protected_areas_zipped:
     message: "Download protected areas data as zip."
     output: protected("data/automatic/raw-wdpa.zip")
-    params:
-        url = URL_PROTECTED_AREAS.format(config["parameters"]["wdpa-version"])
+    params: url = config["data-sources"]["protected_areas"]
     shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
@@ -154,12 +152,9 @@ rule protected_areas_in_europe_shapes:
 
 rule raw_srtm_elevation_tile_zipped:
     message: "Download SRTM elevation data tile (x={wildcards.x}, y={wildcards.y}) from CGIAR."
-    output:
-        protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
-    shell:
-        """
-        curl -sLo {output} '{URL_CGIAR_TILE}/srtm_{wildcards.x}_{wildcards.y}.zip'
-        """
+    output: protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
+    params: url = config["data-sources"]["cgiar_tile"]
+    shell: "curl -sLo {output} '{params.url}/srtm_{wildcards.x}_{wildcards.y}.zip'"
 
 
 rule raw_srtm_elevation_tile:
@@ -197,7 +192,7 @@ rule raw_gmted_elevation_tile:
         protected("data/automatic/raw-gmted/raw-gmted-{y}-{x}.tif")
     run:
         url = "{base_url}/{x_inverse}/{y}{x}_20101117_gmted_mea075.tif".format(**{
-            "base_url": URL_GMTED_TILE,
+            "base_url": config["data-sources"]["gmted_tile"],
             "x": wildcards.x,
             "y": wildcards.y,
             "x_inverse": wildcards.x[-1] + wildcards.x[:-1]
@@ -222,12 +217,13 @@ rule raw_gmted_elevation_data:
 rule raw_bathymetry_zipped:
     message: "Download bathymetric data as zip."
     output: protected("data/automatic/raw-bathymetric.zip")
-    shell: "curl -sLo {output} '{URL_BATHYMETRIC}'"
+    params: url = config["data-sources"]["bathymetric"]
+    shell: "curl -sLo {output} '{params.url}'"
 
 
 rule raw_bathymetry:
     message: "Extract bathymetric data from zip."
-    input: rules.raw_bathymetry_zipped.output
+    input: rules.raw_bathymetry_zipped.output[0]
     output: temp("build/ETOPO1_Bed_g_geotiff.tif")
     shell: "unzip {input} -d ./build/"
 
@@ -305,13 +301,13 @@ rule protected_areas_in_europe_rasterised:
 rule settlements:
     message: "Warp settlement data to CRS of study using {threads} threads."
     input:
-        class50 = RAW_SETTLEMENT_DATA.format(esm_class="50"),
-        class40 = RAW_SETTLEMENT_DATA.format(esm_class="40"),
-        class41 = RAW_SETTLEMENT_DATA.format(esm_class="41"),
-        class45 = RAW_SETTLEMENT_DATA.format(esm_class="45"),
-        class30 = RAW_SETTLEMENT_DATA.format(esm_class="30"),
-        class35 = RAW_SETTLEMENT_DATA.format(esm_class="35"),
-        reference = rules.land_cover_in_europe.output
+        class50 = config["data-sources"]["settlement_data"].format(esm_class="50"),
+        class40 = config["data-sources"]["settlement_data"].format(esm_class="40"),
+        class41 = config["data-sources"]["settlement_data"].format(esm_class="41"),
+        class45 = config["data-sources"]["settlement_data"].format(esm_class="45"),
+        class30 = config["data-sources"]["settlement_data"].format(esm_class="30"),
+        class35 = config["data-sources"]["settlement_data"].format(esm_class="35"),
+        reference = rules.land_cover_in_europe.output[0]
     output:
         buildings = "build/esm-class50-buildings.tif",
         urban_greens = "build/esm-class404145-urban-greens.tif",
@@ -342,15 +338,12 @@ rule bathymetry_in_europe:
     output:
         "build/bathymetry-in-europe.tif"
     conda: "../envs/default.yaml"
-    shell:
-        """
-        rio warp {input.bathymetry} -o {output} --like {input.reference} --resampling min
-        """
+    shell: "rio warp {input.bathymetry} -o {output} --like {input.reference} --resampling min"
 
 
 rule eez_in_europe:
     message: "Clip exclusive economic zones to study area."
-    input: RAW_EEZ_DATA
+    input: config["data-sources"]["eez_data"]
     output: "build/eez-in-europe.geojson"
     params:
         bounds="{x_min},{y_min},{x_max},{y_max}".format(**config["scope"]["bounds"]),
