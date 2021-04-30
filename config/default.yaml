@@ -68,7 +68,6 @@ scope:
             x_max: -10  # in degrees east
             y_min: 30  # in degrees north
             y_max: 41  # in degrees north
-
 layers:
     continental:
         Austria: nuts0

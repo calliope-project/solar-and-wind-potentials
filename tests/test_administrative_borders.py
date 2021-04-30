@@ -12,6 +12,7 @@ with open('config/default.yaml', 'r') as src:
 
 PATH_TO_BORDERS = ROOT_DIR / "build" / "administrative-borders.gpkg"
 
+
 @pytest.mark.skipif(not PATH_TO_BORDERS.exists(), reason="Consolidated administrative border shapefile not available.")
 def test_administrative_border_layers():
     layers = fiona.listlayers(str(PATH_TO_BORDERS))

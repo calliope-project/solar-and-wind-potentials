@@ -13,4 +13,4 @@ dependencies:
     - pandas=0.23.2
     - shapely=1.7.1
     - pip:
-        -e .
+        - -e .[geo]

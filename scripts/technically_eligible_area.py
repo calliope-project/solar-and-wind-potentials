@@ -2,7 +2,7 @@
 import numpy as np
 import rasterio
 
-from renewablepotentialslib.shape_utils import determine_pixel_areas
+from renewablepotentialslib.geo.shape_utils import determine_pixel_areas
 from renewablepotentialslib.eligibility import Eligibility
 
 DATATYPE = np.float32

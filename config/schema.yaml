@@ -111,19 +111,7 @@ properties:
         patternProperties:
             ^.*$:
                 type: object
-                properties:
-                    ^.*$:  # ideally this would be 'oneof' the list of countries above (can this be done in a schema??)
+                propertyNames: {"$ref": "#/properties/scope/properties/countries/items"}
+                patternProperties:
+                    ^.*$:
                         type: string
-                        enum:
-                            - gadm0
-                            - gadm1
-                            - gadm2
-                            - gadm3
-                            - gadm4
-                            - gadm5
-                            - lau2
-                            - nuts0
-                            - nuts1
-                            - nuts2
-                            - nuts3
-

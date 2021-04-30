@@ -4,7 +4,7 @@ from datetime import timedelta
 import numpy as np
 import rasterio
 
-from renewablepotentialslib.conversion import watt_to_watthours
+from renewablepotentialslib.geo.conversion import watt_to_watthours
 
 
 def determine_electricity_yield(path_to_eligibility_categories, path_to_capacities_pv_prio,

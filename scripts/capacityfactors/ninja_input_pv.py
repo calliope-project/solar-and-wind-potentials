@@ -2,8 +2,8 @@
 import pandas as pd
 import geopandas as gpd
 
-from renewablepotentialslib.shape_utils import point_raster_on_shapes
-from renewablepotentialslib.conversion import area_to_capacity, orientation_to_azimuth
+from renewablepotentialslib.geo.shape_utils import point_raster_on_shapes
+from renewablepotentialslib.geo.conversion import area_to_capacity, orientation_to_azimuth
 
 
 def pv_simulation_parameters(path_to_shapes_of_land_surface, path_to_roof_categories,

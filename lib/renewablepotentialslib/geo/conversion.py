@@ -17,7 +17,7 @@ import shapely.geometry
 import shapely.ops
 import pyproj
 
-from renewablepotentialslib import EPSG_3035_PROJ4
+from renewablepotentialslib.geo import EPSG_3035_PROJ4
 
 
 def watt_to_watthours(watt, duration):
