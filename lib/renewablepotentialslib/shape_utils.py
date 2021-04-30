@@ -264,7 +264,7 @@ def estimate_polygons_from_points(points, reported_area_col_name):
     def __test_area_size(points):
         area_size_calculated = points.area.sum() / 1e6
         area_size_reported = points[reported_area_col_name].sum()
-        assert np.allclose(area_size_calculated, area_size_reported)
+        assert np.isclose(area_size_calculated, area_size_reported, rtol=1e-2)
 
     original_crs = points.crs
     # convert points to circles
