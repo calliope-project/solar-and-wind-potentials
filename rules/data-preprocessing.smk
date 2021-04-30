@@ -128,26 +128,32 @@ rule raw_protected_areas_zipped:
     shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
-rule protected_areas_in_europe_shapes:
+rule raw_protected_areas_in_europe_unzipped:
     message: "Extract protected areas data as zip."
-    input:
-        src = "src/protected_areas_in_europe.py",
-        wdpa_zip = rules.raw_protected_areas_zipped.output
+    input: rules.raw_protected_areas_zipped.output
     params:
-        version = config["parameters"]["wdpa-version"],
-        temp_dir = "build/raw-wdpa-temp",
-        shapes_to_include = "polygons,points"
-    output: all_shapes = "build/protected-areas-in-europe.geojson"
+        version = config["parameters"]["wdpa-version"]
+    output: temp("build/raw-wdpa")
     conda: "../envs/default.yaml"
     shell:
         """
-        unzip {input.wdpa_zip} *.zip -d {params.temp_dir}
-        unzip -o {params.temp_dir}/WDPA_{params.version}_Public_shp_0.zip -d {params.temp_dir}/WDPA_to_merge_0
-        unzip -o {params.temp_dir}/WDPA_{params.version}_Public_shp_1.zip -d {params.temp_dir}/WDPA_to_merge_1
-        unzip -o {params.temp_dir}/WDPA_{params.version}_Public_shp_2.zip -d {params.temp_dir}/WDPA_to_merge_2
-        {PYTHON} {input.src} {params.temp_dir} {output.all_shapes} {params.shapes_to_include} {CONFIG_FILE}
-        rm -r {params.temp_dir}/
+        unzip {input} *.zip -d {output}
+        unzip -o {output}/WDPA_{params.version}_Public_shp_0.zip -d {output}/WDPA_to_merge_0
+        unzip -o {output}/WDPA_{params.version}_Public_shp_1.zip -d {output}/WDPA_to_merge_1
+        unzip -o {output}/WDPA_{params.version}_Public_shp_2.zip -d {output}/WDPA_to_merge_2
         """
+
+
+rule protected_areas_in_europe:
+    message: "Extract protected areas data as zip."
+    input:
+        src = script_dir + "protected_areas_in_europe.py",
+        shapes = rules.raw_protected_areas_in_europe_unzipped.output[0]
+    params:
+        shapes_to_include = "polygons,points"
+    output: "build/protected-areas-in-europe.geojson"
+    conda: "../envs/default.yaml"
+    script: "../scripts/protected_areas_in_europe.py"
 
 
 rule raw_srtm_elevation_tile_zipped:
@@ -283,8 +289,8 @@ rule slope_in_europe:
 rule protected_areas_in_europe_rasterised:
     message: "Rasterise protected areas data."
     input:
-        all_shapes = rules.protected_areas_in_europe_shapes.output.all_shapes,
-        land_cover = rules.land_cover_in_europe.output
+        all_shapes = rules.protected_areas_in_europe.output[0],
+        land_cover = rules.land_cover_in_europe.output[0]
     output:
         "build/protected-areas-europe.tif"
     benchmark:
