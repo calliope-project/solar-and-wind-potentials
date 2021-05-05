@@ -197,7 +197,7 @@ rule potentials:
         wind_yield = rules.electricity_yield_of_technical_eligibility.output.wind,
         category = rules.category_of_technical_eligibility.output[0],
         land_cover = rules.land_cover_in_europe.output[0],
-        protected_areas = rules.protected_areas_in_europe.output[0]
+        protected_areas = rules.protected_areas_in_europe_rasterised.output[0]
     params:
         scenario = lambda wildcards: config["scenarios"][wildcards.scenario],
         potential_metric = "electricity_yield"
@@ -218,7 +218,7 @@ rule areas:
         area = rules.area_of_technical_eligibility.output[0],
         category = rules.category_of_technical_eligibility.output[0],
         land_cover = rules.land_cover_in_europe.output[0],
-        protected_areas = rules.protected_areas_in_europe.output[0]
+        protected_areas = rules.protected_areas_in_europe_rasterised.output[0]
     params:
         scenario = lambda wildcards: config["scenarios"][wildcards.scenario]
     output:
@@ -241,7 +241,7 @@ rule capacities:
         wind_yield = rules.electricity_yield_of_technical_eligibility.output.wind,
         category = rules.category_of_technical_eligibility.output[0],
         land_cover = rules.land_cover_in_europe.output[0],
-        protected_areas = rules.protected_areas_in_europe.output[0]
+        protected_areas = rules.protected_areas_in_europe_rasterised.output[0]
     params:
         scenario = lambda wildcards: config["scenarios"][wildcards.scenario],
         potential_metric = "electricity_yield"

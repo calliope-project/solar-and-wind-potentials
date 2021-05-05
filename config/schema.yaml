@@ -8,6 +8,9 @@ properties:
                 type: number
                 enum: [2006, 2010, 2013, 2016, 2021]
                 description: Indicates the reference NUTS year
+            wdpa-version:
+                type: string
+                descriptions: Indicates the latest Protected Planet WDPA year. Only the two latest datasets are available for download at any given time.
     crs:
         type: string
         enum: ["EPSG:4326"]
