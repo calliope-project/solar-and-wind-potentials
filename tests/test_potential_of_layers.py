@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import pandas as pd
 
-from src.potentials import Potential
+from renewablepotentialslib.eligibility import Potential
 
 TOLERANCE = 0.005 # 0.5%
 

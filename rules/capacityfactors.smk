@@ -4,53 +4,56 @@ This is based on simulations run based on input generated in the workflow `ninja
 that renewables.ninja simulations are not in the loop, i.e. they are not run automatically but must
 be run manually if they need to be altered.
 """
-PYTHON = "PYTHONPATH=./ python"
-PYTHON_SCRIPT = "PYTHONPATH=./ python {input} {output}"
 
-CONFIG_FILE = "config/default.yaml"
-configfile: CONFIG_FILE
+configfile: "./config/default.yaml"
+root_dir = config["root-directory"] + "/" if config["root-directory"] not in ["", "."] else ""
+script_dir = f"{root_dir}scripts/"
 
 
 rule capacityfactor_timeseries:
     message: "Create index capacity factor timeseries of {wildcards.technology}."
     input:
-        "src/capacityfactors/timeseries.py",
-        "data/capacityfactors/{technology}.nc"
+        script = script_dir + "capacityfactors/timeseries.py",
+        capacityfactor = lambda wildcards: config["data-sources"]["raw-capacity-factors"].format(technology=wildcards.technology)
     output:
         "build/capacityfactors/{technology}-timeseries.nc"
     conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT
+    script: "../scripts/capacityfactors/timeseries.py"
 
 
 rule capacityfactor_id_map:
     message: "Create raster map of indices to time series for {wildcards.technology}."
     input:
-        src = "src/capacityfactors/id_map.py",
-        timeseries = rules.capacityfactor_timeseries.output,
-        reference = "build/land-cover-europe.tif"
+        script = script_dir + "capacityfactors/id_map.py",
+        timeseries = rules.capacityfactor_timeseries.output[0]
     output:
-        "build/capacityfactors/{technology}-ids.tif"
+        temp("build/{technology}-ids-lowres.tif")
     shadow: "full"
     params:
         resolution = config["parameters"]["ninja"]["resolution-grid"]
     conda: "../envs/default.yaml"
-    shell:
-        """
-        {PYTHON} {input.src} {input.timeseries} build/{wildcards.technology}-ids-lowres.tif {params.resolution}
-        rio warp build/{wildcards.technology}-ids-lowres.tif {output} --like {input.reference} \
-        --resampling nearest
-        """
+    script: "../scripts/capacityfactors/id_map.py"
+
+
+rule capacityfactor_id_map_warped_to_land_cover:
+    message: "Warp raster map of indices for {wildcards.technology} to land cover map resolution."
+    input:
+        id_map = rules.capacityfactor_id_map.output[0],
+        reference = "build/land-cover-europe.tif"
+    output:
+        "build/capacityfactors/{technology}-ids.tif"
+    shadow: "full"
+    conda: "../envs/default.yaml"
+    shell: "rio warp {input.id_map} {output} --like {input.reference} --resampling nearest"
 
 
 rule time_average_capacityfactor_map:
     message: "Create raster map of average capacity factors for {wildcards.technology}."
     input:
-        "src/capacityfactors/averages_map.py",
-        rules.capacityfactor_id_map.output,
-        rules.capacityfactor_timeseries.output
+        scripts = script_dir + "capacityfactors/averages_map.py",
+        id_map = rules.capacityfactor_id_map_warped_to_land_cover.output[0],
+        timeseries = rules.capacityfactor_timeseries.output[0]
     output:
         "build/capacityfactors/{technology}-time-average.tif"
     conda: "../envs/default.yaml"
-    shell:
-        PYTHON_SCRIPT
+    script: "../scripts/capacityfactors/averages_map.py"
