@@ -81,6 +81,7 @@ properties:
                         description: Maximum Latitude, in degrees north
                 description: Total extent of system under study. Defaults to all of Europe
             exclusion_zones:
+                type: object
                 patternProperties:
                     ^.*$:
                         properties:
@@ -106,7 +107,7 @@ properties:
                                 description: Maximum Latitude, in degrees north
                 description: Any number of bounding boxes defining exclusion zones, where spatial features within the total bounds are to be ignored.
     layers:
-        scope: object
+        type: object
         patternProperties:
             ^.*$:
                 type: object
