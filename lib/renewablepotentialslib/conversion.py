@@ -16,6 +16,7 @@ import pycountry
 import shapely.geometry
 import shapely.ops
 import pyproj
+import numpy as np
 
 from renewablepotentialslib import EPSG_3035_PROJ4
 
@@ -169,3 +170,20 @@ def orientation_to_azimuth(orientation):
         return 180
     else:
         raise ValueError()
+
+
+def deg_to_int(deg):
+    rounded_float = np.round(np.cos(np.radians(deg)) * 250, 0)
+    if isinstance(rounded_float, np.ndarray):
+        return rounded_float.astype(int)
+    else:
+        return int(rounded_float)
+
+
+def int_to_deg(r):
+    return np.degrees(np.arccos(r / 250))
+
+
+def get_valid_pixels_from_tech_slope_limit(r, lim, nodata):
+        _arr = np.where(r <= lim, 0, 1)  # steeper = lower integer value
+        return np.where(r == 0, nodata, _arr).astype(np.float32)  # integer value of zero = 90 degrees (i.e. NaN)

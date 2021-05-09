@@ -4,6 +4,7 @@ import io
 
 import pytest
 import pandas as pd
+import numpy as np
 from pandas.testing import assert_frame_equal
 
 from renewablepotentialslib.conversion import (
@@ -11,7 +12,10 @@ from renewablepotentialslib.conversion import (
     eu_country_code_to_iso3,
     coordinate_string_to_decimal,
     transform_coordinates,
-    area_to_capacity
+    area_to_capacity,
+    deg_to_int,
+    int_to_deg,
+    get_valid_pixels_from_tech_slope_limit
 )
 
 
@@ -176,3 +180,41 @@ flat, 0.000000, 0.301960
         capacity_weight = float(roof_model_capacity_based.loc[("flat", 0.0)])
         area_weight = float(roof_model_area_based.loc[("flat", 0.0)])
         assert capacity_weight > area_weight
+
+class TestIntToDeg:
+
+    @pytest.fixture()
+    def int_array(self):
+        return np.round(250 * np.array([
+            [np.sqrt(3) / 2, 1 / np.sqrt(2), 0],
+            [1.0, 1.0, 1.0]
+        ]), 0).astype(int)
+
+    @pytest.fixture()
+    def deg_array(self):
+        return np.array([
+            [30, 45, 90],
+            [0, 0, 0]
+        ])
+
+    def test_deg_to_int_arr(self, int_array, deg_array):
+        test_int_array = deg_to_int(deg_array)
+        assert np.equal(test_int_array, int_array).all()
+        assert test_int_array.dtype == np.int
+
+    def test_deg_to_int_val(self):
+        test_int = deg_to_int(0)
+        assert test_int == 250
+        assert isinstance(test_int, int)
+
+    def test_int_to_deg(self, int_array, deg_array):
+        test_deg_array = int_to_deg(int_array)
+        assert np.allclose(test_deg_array, deg_array, rtol=1e-2)
+
+    @pytest.mark.parametrize(("lim", "nodata"), ([0, -1], [250, -2], [-1, 0]))
+    def test_get_valid_pixels(self, int_array, lim, nodata):
+        test_array = get_valid_pixels_from_tech_slope_limit(int_array, lim, nodata)
+        assert all(test_array[(test_array <= lim) & (int_array != 0)] == 0)
+        assert all(test_array[int_array == 0] == nodata)
+        assert all(test_array[(test_array > lim) & (int_array != 0)] == 1)
+        assert test_array.dtype == np.float32
