@@ -151,22 +151,17 @@ class TestPolygonsFromPoints:
 
     @pytest.fixture
     def points(self):
-        points = {  # Latitiude, Longitude
-            'athens': [37.9838, 23.7275],
-            'davos': [46.8027, 9.8360],
-            'stockholm': [59.3293, 18.0686],
-            'wurzburg': [49.7913, 9.9534]
+        latitudes = {
+            'athens': 37.983, 'davos': 46.802, 'stockholm': 59.329, 'wurzburg': 49.791
         }
-        areas = {
-            'athens': 1,
-            'davos': 5,
-            'stockholm': 100,
-            'wurzburg': 500
+        longitudes = {
+            'athens': 23.727, 'davos': 9.836, 'stockholm': 18.068, 'wurzburg': 9.953
         }
+        areas = {'athens': 1, 'davos': 5, 'stockholm': 100, 'wurzburg': 500}
         point_gdf = gpd.GeoDataFrame(
             # x = longitude, y = latitude
-            geometry=gpd.points_from_xy([i[1] for i in points.values()], [i[0] for i in points.values()]),
-            index=points.keys(),
+            geometry=gpd.points_from_xy(longitudes.values(), latitudes.values()),
+            index=latitudes.keys(),
             crs = WGS84
         )
         point_gdf["REP_AREA"] = pd.Series(areas)
@@ -177,14 +172,18 @@ class TestPolygonsFromPoints:
         return estimate_polygons_from_points(points, "REP_AREA")
 
 
-    @pytest.mark.parametrize(("area", "radius"), [(np.pi, 1000), (1, 564.19)])
+    @pytest.mark.parametrize(
+        ("area", "radius"),
+        [(np.pi, 1000), (1, 564.19), ([np.pi, 1], [1000, 564.19])]
+    )
     def test_radius_meter(self, area, radius):
             calculated_radius = _radius_meter(area)
             assert np.isclose(calculated_radius, radius)
 
-    def test_estimate_polygons_area(self, points, estimated_polygons):
-        assert estimated_polygons.crs == points.crs
+    def test_all_points_are_now_polygons(self, estimated_polygons):
         assert all(isinstance(geom, shapely.geometry.Polygon) for geom in estimated_polygons.geometry)
+
+    def test_all_polygons_have_expected_area(self, points, estimated_polygons):
         assert np.allclose(estimated_polygons.to_crs(EPSG_3035).area / 1e6, points["REP_AREA"], rtol=1e-2)
 
     def test_estimate_polygons_crs(self, points, estimated_polygons):

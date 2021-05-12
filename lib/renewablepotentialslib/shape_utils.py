@@ -269,14 +269,13 @@ def estimate_polygons_from_points(points, reported_area_col_name):
     original_crs = points.crs
     # convert points to circles
     points_in_metres = points.to_crs("epsg:3035")
-    points_in_metres.geometry = [
-        point_data.geometry.buffer(_radius_meter(point_data[reported_area_col_name]))
-        for _point_idx, point_data in points_in_metres.iterrows()
-    ]
+    points_in_metres.geometry = points_in_metres.buffer(
+        _radius_meter(points_in_metres[reported_area_col_name])
+    )
     __test_area_size(points_in_metres)
     return points_in_metres.to_crs(original_crs)
 
 
 def _radius_meter(area_squarekilometer):
     area_squaremeter = area_squarekilometer * 1e6
-    return math.sqrt(area_squaremeter / math.pi)
+    return np.sqrt(area_squaremeter / np.pi)

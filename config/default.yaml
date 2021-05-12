@@ -6,7 +6,7 @@ data-sources:
     lau: http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/COMM-01M-2013-SH.zip
     degurba: http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip
     land_cover: http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip
-    protected_areas: https://www.protectedplanet.net/downloads/WDPA_Feb2019?type=shapefile
+    protected-areas: http://d1gam3xoknrgr2.cloudfront.net/current/WDPA_{version}_Public_shp.zip
     cgiar_tile: http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/
     gmted_tile: https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED/075darcsec/mea/
     gadm: https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/gadm36_{country_code}_gpkg.zip
@@ -243,7 +243,10 @@ parameters:
     max-building-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2
     max-urban-green-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2. Removes e.g. Berlin's Tempelhofer Feld.
     nuts-year: 2010  # Choice of NUTS data to use from [2006, 2010, 2013, 2016, 2021]
-    wdpa-version: Mar2021  # Pointer to latest WDPA data.
+    protected-areas:
+        version: May2021  # Pointer to latest WDPA data.
+        shapes-to-include: [polygons, points]
+
 scenarios:
     technical-potential:
         use-protected-areas: True

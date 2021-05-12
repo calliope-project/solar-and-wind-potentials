@@ -1,6 +1,12 @@
 $schema: "http://json-schema.org/draft-07/schema#"
 description: Default configuration schema
 properties:
+    data-sources:
+        type: object
+        properties:
+            protected-areas:
+                type: string
+                format: ^(https?|http?):\/\/.+{version}.*
     parameters:
         type: object
         properties:
@@ -8,9 +14,18 @@ properties:
                 type: number
                 enum: [2006, 2010, 2013, 2016, 2021]
                 description: Indicates the reference NUTS year
-            wdpa-version:
-                type: string
-                description: Indicates the latest Protected Planet WDPA year. Only the two latest datasets are available for download at any given time.
+            wdpa:
+                type: object
+                properties:
+                    version:
+                        type: string
+                        description: Indicates the latest Protected Planet WDPA year. Only the two latest datasets are available for download at any given time.
+                    shapes-to-include:
+                        type: array
+                        description: WDPA includes exact polygons of protected areas and points with a rough indication of protected area around that point. This configuration option allows points and or polygons from WDPA to be processed in the workflow.
+                        items:
+                            type: string
+                            enum: [polygons, points]
     crs:
         type: string
         enum: ["EPSG:4326"]

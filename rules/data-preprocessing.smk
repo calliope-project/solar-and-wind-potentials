@@ -79,7 +79,7 @@ rule raw_lau_units_unzipped:
 rule administrative_borders_lau:
     message: "Normalise LAU administrative borders."
     input:
-        src = script_dir + "lau.py",
+        script = script_dir + "lau.py",
         shapes = rules.raw_lau_units_unzipped.output.shapes,
         attributes = rules.raw_lau_units_unzipped.output.attributes,
     output:
@@ -92,7 +92,7 @@ rule administrative_borders_lau:
 rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
-        src = script_dir + "administrative_borders.py",
+        script = script_dir + "administrative_borders.py",
         nuts_geojson = rules.raw_nuts_units.output[0],
         gadm_gpkg = rules.all_gadm_administrative_borders.output[0],
         lau_gpkg = rules.administrative_borders_lau.output[0]
@@ -124,36 +124,29 @@ rule raw_land_cover:
 rule raw_protected_areas_zipped:
     message: "Download protected areas data as zip."
     output: protected("data/automatic/raw-wdpa.zip")
-    params: url = config["data-sources"]["protected_areas"]
+    params: url = config["data-sources"]["protected-areas"].format(version=config["parameters"]["protected-areas"]["version"])
     shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
-rule raw_protected_areas_in_europe_unzipped:
-    message: "Extract protected areas data as zip."
+rule raw_protected_area_shapes:
+    message: "Extract protected areas data as separate zip files."
     input: rules.raw_protected_areas_zipped.output
-    params:
-        version = config["parameters"]["wdpa-version"]
-    output: temp("build/raw-wdpa")
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        unzip {input} *.zip -d {output}
-        unzip -o {output}/WDPA_{params.version}_Public_shp_0.zip -d {output}/WDPA_to_merge_0
-        unzip -o {output}/WDPA_{params.version}_Public_shp_1.zip -d {output}/WDPA_to_merge_1
-        unzip -o {output}/WDPA_{params.version}_Public_shp_2.zip -d {output}/WDPA_to_merge_2
-        """
+    output: temp(directory("build/raw-wdpa"))
+    shell: "unzip {input} *.zip -d {output}"
 
 
-rule protected_areas_in_europe:
+rule protected_areas:
     message: "Extract protected areas data as zip."
     input:
-        src = script_dir + "protected_areas_in_europe.py",
-        shapes = rules.raw_protected_areas_in_europe_unzipped.output[0]
+        script = script_dir + "protected_areas.py",
+        shape_dir = rules.raw_protected_area_shapes.output[0]
     params:
-        shapes_to_include = "polygons,points"
-    output: "build/protected-areas-in-europe.geojson"
+        shapefile_prefix = "WDPA_{}_Public_shp".format(config["parameters"]["protected-areas"]["version"]),
+        shapes_to_include = config["parameters"]["protected-areas"]["shapes-to-include"],
+        scope_config = config["scope"]
+    output: "build/protected-areas.geojson"
     conda: "../envs/default.yaml"
-    script: "../scripts/protected_areas_in_europe.py"
+    script: "../scripts/protected_areas.py"
 
 
 rule raw_srtm_elevation_tile_zipped:
@@ -286,21 +279,20 @@ rule slope_in_europe:
         """
 
 
-rule protected_areas_in_europe_rasterised:
+rule protected_areas_in_europe:
     message: "Rasterise protected areas data."
     input:
-        all_shapes = rules.protected_areas_in_europe.output[0],
+        all_shapes = rules.protected_areas.output[0],
         land_cover = rules.land_cover_in_europe.output[0]
     output:
         "build/protected-areas-europe.tif"
     benchmark:
         "build/rasterisation-benchmark.txt"
-    params:
-        bounds = "{x_min},{y_min},{x_max},{y_max}".format(**config["scope"]["bounds"])
     conda: "../envs/default.yaml"
     shell:
         """
-        rio rasterize {input.all_shapes} --like {input.land_cover} --default-value 255 --all_touched -f "GTiff" --co dtype=uint8 -o {output}
+        rio rasterize {input.all_shapes} --like {input.land_cover} \
+        --default-value 255 --all_touched -f "GTiff" --co dtype=uint8 -o {output}
         """
 
 
