@@ -153,14 +153,15 @@ rule land_cover_in_europe:
 rule tech_slope_thresholds:
     message: "Create binary raster for {wildcards.tech}, whose land use is limited by slope using {threads} threads"
     input:
-        src = "src/slopes.py",
+        scripts = script_dir + "slopes.py",
         slopes_in_europe = config["data-sources"]["slope"]
     output: temp("build/data/eudem_slop_3035_europe_{tech}.tif")
+    threads: config["snakemake"]["max-threads"]
     params:
-        max_slope = config["parameters"]["max-slope"],
+        max_slope = lambda wildcards: config["parameters"]["max-slope"][wildcards.tech],
         max_threads = config["snakemake"]["max-threads"]
     conda: "../envs/default.yaml"
-    script: "../src/slopes.py"
+    script: "../scripts/slopes.py"
 
 
 rule slope_thresholds_warped_to_land_cover:
@@ -174,7 +175,7 @@ rule slope_thresholds_warped_to_land_cover:
     shell:
         """
         rio warp {input.slope_threshold} -o {output} --like {input.land_cover} \
-        --resampling average --threads {threads}
+        --resampling min --threads {threads}
         """
 
 

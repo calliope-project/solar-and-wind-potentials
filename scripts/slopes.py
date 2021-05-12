@@ -2,11 +2,10 @@ import concurrent.futures
 import multiprocessing
 import threading
 
-import numpy as np
 import rasterio
 import rasterio.warp
 
-from renewablepotentialslib import (
+from renewablepotentialslib.conversion import (
     deg_to_int,
     int_to_deg,
     get_valid_pixels_from_tech_slope_limit
