@@ -175,7 +175,7 @@ rule slope_thresholds_warped_to_land_cover:
     shell:
         """
         rio warp {input.slope_threshold} -o {output} --like {input.land_cover} \
-        --resampling min --threads {threads}
+        --resampling average --threads {threads}
         """
 
 

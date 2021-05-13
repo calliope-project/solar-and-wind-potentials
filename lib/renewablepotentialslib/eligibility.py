@@ -139,8 +139,8 @@ def eligibility_land_mask(
     forest = np.isin(land_cover, FOREST)
     other = np.isin(land_cover, OTHER)
     water = np.isin(land_cover, WATER)
-    pv = slope_pv & ~settlements & (farm | other)
-    wind = slope_wind & ~settlements & (farm | forest | other)
+    pv = (slope_pv >= 0.9) & ~settlements & (farm | other)
+    wind = (slope_wind >= 0.9) & ~settlements & (farm | forest | other)
     offshore = (bathymetry > max_depth_offshore) & ~settlements & water
 
     # allocate eligibility
