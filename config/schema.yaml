@@ -8,6 +8,11 @@ properties:
                 type: number
                 enum: [2006, 2010, 2013, 2016, 2021]
                 description: Indicates the reference NUTS year
+            max-slope-pixel-fraction-threshold:
+                type: number
+                minimum: 0
+                maximum: 1
+                description: Minimum fraction of each aggregated pixel that is not too steep for a technology to be deployed. 0.9 indicates that 90% of the pixel does not exceed a technology's slope threshold.
     crs:
         type: string
         enum: ["EPSG:4326"]

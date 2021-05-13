@@ -130,8 +130,11 @@ class Potential(Enum):
 
 def eligibility_land_mask(
     land_cover, slope_pv, slope_wind, bathymetry, building_share, urban_green_share,
-    max_building_share, max_urban_green_share, max_depth_offshore
+    max_building_share, max_urban_green_share, max_depth_offshore, slope_threshold
 ):
+
+    # parameters
+    assert slope_pv <= slope_wind # wind can be built whereever pv can be built
 
     # prepare masks
     settlements = (building_share > max_building_share) | (urban_green_share > max_urban_green_share)
@@ -139,8 +142,8 @@ def eligibility_land_mask(
     forest = np.isin(land_cover, FOREST)
     other = np.isin(land_cover, OTHER)
     water = np.isin(land_cover, WATER)
-    pv = (slope_pv >= 0.9) & ~settlements & (farm | other)
-    wind = (slope_wind >= 0.9) & ~settlements & (farm | forest | other)
+    pv = (slope_pv >= slope_threshold) & ~settlements & (farm | other)
+    wind = (slope_wind >= slope_threshold) & ~settlements & (farm | forest | other)
     offshore = (bathymetry > max_depth_offshore) & ~settlements & water
 
     # allocate eligibility

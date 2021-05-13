@@ -240,6 +240,7 @@ parameters:
     max-slope:
         pv: 10 # [°] (AlGarni:2018)
         wind: 20 # [°] (McKenna:2014)
+    max-slope-pixel-fraction-threshold: 0.9
     max-depth-offshore: -50
     max-building-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2
     max-urban-green-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2. Removes e.g. Berlin's Tempelhofer Feld.
