@@ -46,11 +46,11 @@ def determine_eligibility(path_to_land_cover, path_to_integer_slope, path_to_bat
 if __name__ == "__main__":
     determine_eligibility(
         path_to_land_cover=snakemake.input.land_cover,
-        path_to_slope=snakemake.input.slope,
+        path_to_integer_slope=snakemake.input.integer_slope,
         path_to_bathymetry=snakemake.input.bathymetry,
         path_to_building_share=snakemake.input.building_share,
         path_to_urban_green_share=snakemake.input.urban_green_share,
-        max_integer_slope=snakemake.params.max_integer_slope,
+        max_slope=snakemake.params.max_slope,
         max_building_share=snakemake.params.max_building_share,
         max_urban_green_share=snakemake.params.max_urban_green_share,
         max_depth_offshore=snakemake.params.max_depth_offshore,
