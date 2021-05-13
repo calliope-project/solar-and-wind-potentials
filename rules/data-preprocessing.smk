@@ -1,6 +1,6 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
-from renewablepotentialslib.rule_utils import collect_shape_dirs
+from rule_utils import collect_shape_dirs
 
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds

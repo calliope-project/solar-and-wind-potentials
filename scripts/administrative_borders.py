@@ -45,7 +45,10 @@ def normalise_admin_borders(crs, scope_config, path_to_output, **shape_dirs):
 
 
 if __name__ == "__main__":
-    shape_dirs = {k: v for k, v in snakemake.input.items() if k != "src"}
+    shape_dirs = {
+        source.replace("SHAPEINPUTS_", ""): source_dir
+        for source, source_dir in snakemake.input.items() if source.startswith("SHAPEINPUTS")
+    }
     normalise_admin_borders(
         crs=snakemake.params.crs,
         scope_config=snakemake.params.scope,

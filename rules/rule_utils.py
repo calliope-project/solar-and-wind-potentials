@@ -4,7 +4,7 @@ def collect_shape_dirs(config, rules):
     inputs = {}
     for shape in shapes:
         if shape in ["nuts", "gadm", "lau"]:
-            inputs[shape] = getattr(rules, f"administrative_borders_{shape}").output[0]
+            inputs[f"SHAPEINPUT_{shape}"] = getattr(rules, f"administrative_borders_{shape}").output[0]
         else:
-            inputs[shape] = config["data-sources"][shape]
+            inputs[f"SHAPEINPUT_{shape}"] = config["data-sources"][shape]
     return inputs
