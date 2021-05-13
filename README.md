@@ -35,6 +35,7 @@ Whenever possible, data is downloaded automatically. As this is not always possi
 * [European Settlement Map 2012, Release 2017, 100m](https://land.copernicus.eu/pan-european/GHSL/european-settlement-map), to be placed at `./data/esm-100m-2017/`
 * [World Exclusive Economic Zones v10](http://www.marineregions.org/downloads.php), to be placed in `./data/World_EEZ_v10_20180221`
 * capacity factors from renewable.ninja, to be placed in `./data/capacityfactors/{technology}.nc` for technology in ["wind-onshore", "wind-offshore", "rooftop-pv", "open-field-pv"] (where "open-field-pv" and "rooftop-pv" can be the same dataset and hence can be linked instead of copied)(to run simulations, see `Manual steps` below)
+* [EU-DEM v1.0 slope data, Full European Coverage](https://land.copernicus.eu/imagery-in-situ/eu-dem/eu-dem-v1-0-and-derived-products/slope), to be placed at `./data/eudem_slop_3035_europe.tif`
 
 ## Run the analysis
 
