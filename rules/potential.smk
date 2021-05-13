@@ -15,7 +15,7 @@ rule category_of_technical_eligibility:
     input:
         src = script_dir + "technical_eligibility.py",
         land_cover = rules.land_cover_in_europe.output[0],
-        slope = rules.slope_in_europe.output[0],
+        integer_slope = rules.integer_slope_in_europe.output[0],
         bathymetry = rules.bathymetry_in_europe.output[0],
         building_share = rules.settlements.output.buildings,
         urban_green_share = rules.settlements.output.urban_greens
