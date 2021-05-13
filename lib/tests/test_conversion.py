@@ -183,19 +183,26 @@ flat, 0.000000, 0.301960
 
 class TestIntToDeg:
 
+    LIM = 50
+    NODATA = -1
+    # test values from https://land.copernicus.eu/user-corner/technical-library/slope-conversion-table
     @pytest.fixture()
     def int_array(self):
-        return np.round(250 * np.array([
-            [np.sqrt(3) / 2, 1 / np.sqrt(2), 0],
-            [1.0, 1.0, 1.0]
-        ]), 0).astype(int)
+        return np.array([
+            [0, 30, 80],
+            [180, 230, 250]
+        ])
 
     @pytest.fixture()
     def deg_array(self):
         return np.array([
-            [30, 45, 90],
-            [0, 0, 0]
+            [90, 83.1, 71.3],
+            [43.9, 23.1, 0]
         ])
+
+    @pytest.fixture()
+    def threshold_array(self, int_array):
+        return get_valid_pixels_from_tech_slope_limit(int_array, self.LIM, self.NODATA)
 
     def test_deg_to_int_arr(self, int_array, deg_array):
         test_int_array = deg_to_int(deg_array)
@@ -211,10 +218,14 @@ class TestIntToDeg:
         test_deg_array = int_to_deg(int_array)
         assert np.allclose(test_deg_array, deg_array, rtol=1e-2)
 
-    @pytest.mark.parametrize(("lim", "nodata"), ([0, -1], [250, -2], [-1, 0]))
-    def test_get_valid_pixels(self, int_array, lim, nodata):
-        test_array = get_valid_pixels_from_tech_slope_limit(int_array, lim, nodata)
-        assert all(test_array[(test_array <= lim) & (int_array != 0)] == 0)
-        assert all(test_array[int_array == 0] == nodata)
-        assert all(test_array[(test_array > lim) & (int_array != 0)] == 1)
-        assert test_array.dtype == np.float32
+    def test_pixel_too_steep(self, int_array, threshold_array):
+        assert all(threshold_array[(int_array <= self.LIM) & (int_array != 0)] == 0)
+
+    def test_pixel_within_threshold(self, int_array, threshold_array):
+        assert all(threshold_array[(int_array > self.LIM) & (int_array != 0)] == 1)
+
+    def test_pixel_invalid_area(self, int_array, threshold_array):
+        assert all(threshold_array[int_array == 0] == self.NODATA)
+
+    def test_array_dtype(self, threshold_array):
+        assert threshold_array.dtype == np.float32
