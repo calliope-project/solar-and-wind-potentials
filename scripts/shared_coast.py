@@ -26,7 +26,7 @@ def allocate_eezs(path_to_units, path_to_eezs, path_to_output, threads):
         )
     share = pd.DataFrame(
         index=units.index,
-        data=dict(zip(eezs["id"].values, share_of_coast_length))
+        data=dict(zip(eezs["MRGID"].values, share_of_coast_length))
     )
     assert (
         ((share.sum() > 0.99) & (share.sum() < 1.01)) |
