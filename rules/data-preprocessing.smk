@@ -79,7 +79,7 @@ rule raw_lau_units_unzipped:
 rule administrative_borders_lau:
     message: "Normalise LAU administrative borders."
     input:
-        src = script_dir + "lau.py",
+        script = script_dir + "lau.py",
         shapes = rules.raw_lau_units_unzipped.output.shapes,
         attributes = rules.raw_lau_units_unzipped.output.attributes,
     output:
@@ -92,7 +92,7 @@ rule administrative_borders_lau:
 rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
-        src = script_dir + "administrative_borders.py",
+        script = script_dir + "administrative_borders.py",
         nuts_geojson = rules.raw_nuts_units.output[0],
         gadm_gpkg = rules.all_gadm_administrative_borders.output[0],
         lau_gpkg = rules.administrative_borders_lau.output[0]
@@ -124,18 +124,29 @@ rule raw_land_cover:
 rule raw_protected_areas_zipped:
     message: "Download protected areas data as zip."
     output: protected("data/automatic/raw-wdpa.zip")
-    params: url = config["data-sources"]["protected_areas"]
+    params: url = config["data-sources"]["protected-areas"].format(version=config["parameters"]["protected-areas"]["version"])
     shell: "curl -sLo {output} -H 'Referer: {params.url}' {params.url}"
 
 
-rule raw_protected_areas:
-    message: "Extract protected areas data as zip."
+rule raw_protected_area_shapes:
+    message: "Extract protected areas data as separate zip files."
     input: rules.raw_protected_areas_zipped.output
-    output:
-        polygons = "build/raw-wdpa-feb2019/WDPA_Feb2019-shapefile-polygons.shp",
-        polygon_data = "build/raw-wdpa-feb2019/WDPA_Feb2019-shapefile-polygons.dbf",
-        points = "build/raw-wdpa-feb2019/WDPA_Feb2019-shapefile-points.shp"
-    shell: "unzip -o {input} -d build/raw-wdpa-feb2019"
+    output: temp(directory("build/raw-wdpa"))
+    shell: "unzip {input} *.zip -d {output}"
+
+
+rule protected_areas:
+    message: "Extract protected areas data as zip."
+    input:
+        script = script_dir + "protected_areas.py",
+        shape_dir = rules.raw_protected_area_shapes.output[0]
+    params:
+        shapefile_prefix = "WDPA_{}_Public_shp".format(config["parameters"]["protected-areas"]["version"]),
+        shapes_to_include = config["parameters"]["protected-areas"]["shapes-to-include"],
+        scope_config = config["scope"]
+    output: "build/protected-areas.geojson"
+    conda: "../envs/default.yaml"
+    script: "../scripts/protected_areas.py"
 
 
 rule raw_srtm_elevation_tile_zipped:
@@ -268,41 +279,19 @@ rule slope_in_europe:
         """
 
 
-rule protected_areas_points_to_circles:
-    message: "Estimate shape of protected areas available as points only."
-    input:
-        script_dir + "estimate_protected_shapes.py",
-        protected_areas= rules.raw_protected_areas.output.points
-    params:
-        scope = config["scope"]
-    output:
-        temp("build/protected-areas-points-as-circles.geojson")
-    conda: "../envs/default.yaml"
-    script: "../scripts/estimate_protected_shapes.py"
-
-
 rule protected_areas_in_europe:
-    message: "Rasterise protected areas data and clip to Europe."
+    message: "Rasterise protected areas data."
     input:
-        polygons = rules.raw_protected_areas.output.polygons,
-        points = rules.protected_areas_points_to_circles.output,
-        land_cover = rules.land_cover_in_europe.output
+        all_shapes = rules.protected_areas.output[0],
+        land_cover = rules.land_cover_in_europe.output[0]
     output:
         "build/protected-areas-europe.tif"
     benchmark:
         "build/rasterisation-benchmark.txt"
-    params:
-        bounds = "{x_min},{y_min},{x_max},{y_max}".format(**config["scope"]["bounds"])
     conda: "../envs/default.yaml"
     shell:
-        # The filter is in accordance to the way UNEP-WCMC calculates statistics:
-        # https://www.protectedplanet.net/c/calculating-protected-area-coverage
         """
-        fio cat --rs --bbox {params.bounds} {input.polygons} {input.points} | \
-        fio filter "f.properties.STATUS in ['Designated', 'Inscribed', 'Established'] and \
-        f.properties.DESIG_ENG != 'UNESCO-MAB Biosphere Reserve'" | \
-        fio collect --record-buffered | \
-        rio rasterize --like {input.land_cover} \
+        rio rasterize {input.all_shapes} --like {input.land_cover} \
         --default-value 255 --all_touched -f "GTiff" --co dtype=uint8 -o {output}
         """
 

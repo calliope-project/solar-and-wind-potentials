@@ -13,7 +13,7 @@ rule category_of_technical_eligibility:
     message:
         "Determine upper bound surface eligibility for renewables based on land cover, slope, bathymetry, and settlements."
     input:
-        src = script_dir + "technical_eligibility.py",
+        script = script_dir + "technical_eligibility.py",
         land_cover = rules.land_cover_in_europe.output[0],
         slope = rules.slope_in_europe.output[0],
         bathymetry = rules.bathymetry_in_europe.output[0],
@@ -33,7 +33,7 @@ rule category_of_technical_eligibility:
 rule total_size_swiss_building_footprints_according_to_settlement_data:
     message: "Sum the size of building footprints from settlement data."
     input:
-        src = script_dir + "swiss_building_footprints.py",
+        script = script_dir + "swiss_building_footprints.py",
         building_footprints = rules.settlements.output.buildings,
         eligibility = "build/technically-eligible-land.tif",
         countries = rules.administrative_borders.output[0]

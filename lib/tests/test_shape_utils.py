@@ -1,7 +1,9 @@
 import geopandas as gpd
+import pandas as pd
 import pytest
 import shapely.geometry
 import pycountry
+import numpy as np
 
 from renewablepotentialslib.shape_utils import (
     study_area,
@@ -9,8 +11,12 @@ from renewablepotentialslib.shape_utils import (
     drop_countries,
     drop_geoms_completely_outside_study_area,
     drop_parts_of_geoms_completely_outside_study_area,
-    update_features
+    update_features,
+    estimate_polygons_from_points,
+    _radius_meter
 )
+
+from renewablepotentialslib import WGS84, EPSG_3035
 
 # Loading the 60M file for its smaller size (1M used in actual workflow)
 URL_NUTS = "https://ec.europa.eu/eurostat/cache/GISCO/distribution/v2/nuts/geojson/NUTS_RG_60M_{}_4326.geojson"
@@ -140,3 +146,46 @@ class TestGeomManipulation():
             europe_gdf[europe_gdf.name == 'Highlands and Islands'].area
             > gdf[gdf.name == 'Highlands and Islands'].area
         ).all()
+
+class TestPolygonsFromPoints:
+
+    @pytest.fixture
+    def points(self):
+        latitudes = {
+            'athens': 37.983, 'davos': 46.802, 'stockholm': 59.329, 'wurzburg': 49.791
+        }
+        longitudes = {
+            'athens': 23.727, 'davos': 9.836, 'stockholm': 18.068, 'wurzburg': 9.953
+        }
+        areas = {'athens': 1, 'davos': 5, 'stockholm': 100, 'wurzburg': 500}
+        point_gdf = gpd.GeoDataFrame(
+            # x = longitude, y = latitude
+            geometry=gpd.points_from_xy(longitudes.values(), latitudes.values()),
+            index=latitudes.keys(),
+            crs = WGS84
+        )
+        point_gdf["REP_AREA"] = pd.Series(areas)
+        return point_gdf
+
+    @pytest.fixture
+    def estimated_polygons(self, points):
+        return estimate_polygons_from_points(points, "REP_AREA")
+
+
+    @pytest.mark.parametrize(
+        ("area", "radius"),
+        [(np.pi, 1000), (1, 564.19), ([np.pi, 1], [1000, 564.19])]
+    )
+    def test_radius_meter(self, area, radius):
+            calculated_radius = _radius_meter(area)
+            assert np.isclose(calculated_radius, radius)
+
+    def test_all_points_are_now_polygons(self, estimated_polygons):
+        assert all(isinstance(geom, shapely.geometry.Polygon) for geom in estimated_polygons.geometry)
+
+    def test_all_polygons_have_expected_area(self, points, estimated_polygons):
+        assert np.allclose(estimated_polygons.to_crs(EPSG_3035).area / 1e6, points["REP_AREA"], rtol=1e-2)
+
+    def test_estimate_polygons_crs(self, points, estimated_polygons):
+        assert estimated_polygons.crs == points.crs
+

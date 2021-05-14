@@ -165,28 +165,30 @@ def update_features(gdf, src):
     return gdf
 
 
-def drop_countries(gdf, scope_config):
+def drop_countries(gdf, scope_config, print_dropped=True):
     countries = [pycountry.countries.lookup(i).alpha_3 for i in scope_config["countries"]]
     _not_in = set(gdf.country_code).difference(countries)
-    print(f"Removing {_not_in} as they are outside of study area.")
+    if print_dropped:
+        print(f"Removing {_not_in} as they are outside of study area.")
 
     return gdf[gdf.country_code.isin(countries)]
 
 
-def drop_geoms_completely_outside_study_area(gdf, scope_config):
+def drop_geoms_completely_outside_study_area(gdf, scope_config, print_dropped=True):
     _study_area = study_area(scope_config)
     completely_in = gdf.intersects(_study_area)
     for row_index, row in gdf[~completely_in].iterrows():
-        print(
-            "Removing {} ({}, country={}) as they are outside of study area."
-            .format(*row[["name", "level", "country_code"]])
-        )
+        if print_dropped:
+            print(
+                "Removing {} ({}, country={}) as they are outside of study area."
+                .format(*row[["name", "level", "country_code"]])
+            )
     gdf = gdf[completely_in]
 
     return gdf
 
 
-def drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config):
+def drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config, print_dropped=True):
     gdf = gdf.copy()
     _study_area = study_area(scope_config)
     all_geoms = gdf.explode()
@@ -199,10 +201,11 @@ def drop_parts_of_geoms_completely_outside_study_area(gdf, scope_config):
         return gdf
 
     for row_index, row in gdf.loc[geoms_to_update.any(level=0)].iterrows():
-        print(
-            "Removing parts of {} ({}, country={}) as they are outside of study area."
-            .format(*row[["name", "level", "country_code"]])
-        )
+        if print_dropped:
+            print(
+                "Removing parts of {} ({}, country={}) as they are outside of study area."
+                .format(*row[["name", "level", "country_code"]])
+            )
     # Unlike groupby, dissolve can only operate on columns, not multiindex levels
 
     new_geoms = (
@@ -253,3 +256,26 @@ def study_area(scope_config):
     _study_area = buffer_if_necessary(_study_area)
 
     return _study_area
+
+
+def estimate_polygons_from_points(points, reported_area_col_name):
+    """Estimates the shape of protected areas for which only centroids are known."""
+
+    def __test_area_size(points):
+        area_size_calculated = points.area.sum() / 1e6
+        area_size_reported = points[reported_area_col_name].sum()
+        assert np.isclose(area_size_calculated, area_size_reported, rtol=1e-2)
+
+    original_crs = points.crs
+    # convert points to circles
+    points_in_metres = points.to_crs("epsg:3035")
+    points_in_metres.geometry = points_in_metres.buffer(
+        _radius_meter(points_in_metres[reported_area_col_name])
+    )
+    __test_area_size(points_in_metres)
+    return points_in_metres.to_crs(original_crs)
+
+
+def _radius_meter(area_squarekilometer):
+    area_squaremeter = area_squarekilometer * 1e6
+    return np.sqrt(area_squaremeter / np.pi)
