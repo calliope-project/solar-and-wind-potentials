@@ -7,8 +7,6 @@ data-sources:
     degurba: http://ec.europa.eu/eurostat/cache/GISCO/geodatafiles/DGURBA_2014_SH.zip
     land_cover: http://due.esrin.esa.int/files/Globcover2009_V2.3_Global_.zip
     protected_areas: https://www.protectedplanet.net/downloads/WDPA_Feb2019?type=shapefile
-    cgiar_tile: http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/TIFF/
-    gmted_tile: https://edcintl.cr.usgs.gov/downloads/sciweb1/shared/topo/downloads/GMTED/Global_tiles_GMTED/075darcsec/mea/
     gadm: https://biogeo.ucdavis.edu/data/gadm3.6/gpkg/gadm36_{country_code}_gpkg.zip
     bathymetric: https://www.ngdc.noaa.gov/mgg/global/relief/ETOPO1/data/bedrock/grid_registered/georeferenced_tiff/ETOPO1_Bed_g_geotiff.zip
     pop: http://cidportal.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GPW4_GLOBE_R2015A/GHS_POP_GPW42015_GLOBE_R2015A_54009_250/V1-0/GHS_POP_GPW42015_GLOBE_R2015A_54009_250_v1_0.zip
@@ -18,6 +16,7 @@ data-sources:
     sonnendach_total_size: https://zenodo.org/record/4091033/files/total-rooftop-area-km2.txt?download=1
     sonnendach_total_yield: https://zenodo.org/record/4091033/files/total-yield-twh.txt?download=1
     raw-capacity-factors: data/capacityfactors/{technology}.nc
+    slope: data/eudem_slop_3035_europe.tif
 root-directory: . # point to the root directory if working directory is not root directory
 crs: "EPSG:4326"
 scope:

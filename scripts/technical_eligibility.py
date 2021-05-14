@@ -9,7 +9,7 @@ import rasterio
 from renewablepotentialslib.eligibility import eligibility_land_mask, DATATYPE
 
 
-def determine_eligibility(path_to_land_cover, path_to_slope, path_to_bathymetry,
+def determine_eligibility(path_to_land_cover, path_to_integer_slope, path_to_bathymetry,
                           path_to_building_share, path_to_urban_green_share, path_to_result,
                           max_slope, max_building_share, max_urban_green_share, max_depth_offshore):
     """Determines eligibility of land for renewables."""
@@ -17,8 +17,9 @@ def determine_eligibility(path_to_land_cover, path_to_slope, path_to_bathymetry,
         transform = src.transform
         land_cover = src.read(1)
         crs = src.crs
-    with rasterio.open(path_to_slope) as src:
-        slope = src.read(1)
+    with rasterio.open(path_to_integer_slope) as src:
+        # see https://land.copernicus.eu/user-corner/technical-library/slope-conversion-table
+        slope = np.degrees(np.arccos(src.read(1) / 250))
     with rasterio.open(path_to_bathymetry) as src:
         bathymetry = src.read(1)
     with rasterio.open(path_to_building_share) as src:
@@ -45,7 +46,7 @@ def determine_eligibility(path_to_land_cover, path_to_slope, path_to_bathymetry,
 if __name__ == "__main__":
     determine_eligibility(
         path_to_land_cover=snakemake.input.land_cover,
-        path_to_slope=snakemake.input.slope,
+        path_to_integer_slope=snakemake.input.integer_slope,
         path_to_bathymetry=snakemake.input.bathymetry,
         path_to_building_share=snakemake.input.building_share,
         path_to_urban_green_share=snakemake.input.urban_green_share,
