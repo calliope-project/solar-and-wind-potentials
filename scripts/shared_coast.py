@@ -8,7 +8,7 @@ import pandas as pd
 import geopandas as gpd
 from shapely.prepared import prep
 
-from renewablepotentialslib.shape_utils import buffer_if_necessary
+from renewablepotentialslib.geo.shape_utils import buffer_if_necessary
 
 DRIVER = "GeoJSON"
 

@@ -12,7 +12,7 @@ DTYPE = np.uint16
 NO_DATA_VALUE = 64001
 INDEX_EPSILON = 10e-3
 
-from renewablepotentialslib import EPSG_3035, EPSG_3035_PROJ4, WGS84, WGS84_PROJ4
+from renewablepotentialslib.geo import EPSG_3035, EPSG_3035_PROJ4, WGS84, WGS84_PROJ4
 
 
 def id_map(path_to_timeseries, path_to_map, resolution_km):

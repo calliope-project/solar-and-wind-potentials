@@ -1,5 +1,5 @@
 # generated files
-build/
+/build/
 
 # ignore raw data
 data/
@@ -39,7 +39,6 @@ notebooks/
 
 # Python
 *.pyc
-build/
 dist/
 __pycache__
 *.egg-info

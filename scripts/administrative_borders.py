@@ -1,6 +1,6 @@
 import geopandas as gpd
 
-from renewablepotentialslib.shape_utils import (
+from renewablepotentialslib.geo.shape_utils import (
     buffer_if_necessary,
     to_multi_polygon,
     drop_countries,
@@ -22,12 +22,10 @@ SCHEMA = {
 }
 
 
-def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, crs, scope_config, path_to_output):
+def normalise_admin_borders(crs, scope_config, path_to_output, **shape_dirs):
     """Normalises raw administrative boundary data and places it in one, layered geodatapackage."""
 
-    for _src, _path in {
-        'nuts': path_to_nuts, 'gadm': path_to_gadm, 'lau': path_to_lau
-    }.items():
+    for _src, _path in shape_dirs.items():
         gdf = gpd.read_file(_path)
         gdf = gdf.to_crs(crs)
         gdf.geometry = gdf.geometry.map(buffer_if_necessary).map(to_multi_polygon)
@@ -47,11 +45,13 @@ def normalise_admin_borders(path_to_nuts, path_to_gadm, path_to_lau, crs, scope_
 
 
 if __name__ == "__main__":
+    shape_dirs = {
+        source.replace("SHAPEINPUTS_", ""): source_dir
+        for source, source_dir in snakemake.input.items() if source.startswith("SHAPEINPUTS")
+    }
     normalise_admin_borders(
-        path_to_nuts=snakemake.input.nuts_geojson,
-        path_to_gadm=snakemake.input.gadm_gpkg,
-        path_to_lau=snakemake.input.lau_gpkg,
         crs=snakemake.params.crs,
         scope_config=snakemake.params.scope,
-        path_to_output=snakemake.output[0]
+        path_to_output=snakemake.output[0],
+        **shape_dirs
     )

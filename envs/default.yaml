@@ -19,4 +19,5 @@ dependencies:
     - pycountry=20.7.3
     - pip=19.1.1
     - pip:
-        - -e ../../lib
+        - -e ../../lib[geo]
+        - pytest-pythonpath

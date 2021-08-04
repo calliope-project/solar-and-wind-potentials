@@ -1,5 +1,6 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
+from rule_utils import collect_shape_dirs
 
 RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
 RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
@@ -34,7 +35,7 @@ rule raw_gadm_administrative_borders:
     shell: "unzip -o {input} -d build/raw-gadm"
 
 
-rule all_gadm_administrative_borders:
+rule administrative_borders_gadm:
     message: "Merge gadm administrative borders of all countries."
     input:
         ["build/raw-gadm/gadm36_{}.gpkg".format(country_code)
@@ -47,7 +48,7 @@ rule all_gadm_administrative_borders:
     shell: "ogrmerge.py -o {output} -f gpkg -src_layer_field_content '{{LAYER_NAME}}' -t_srs {params.crs} -single {input}"
 
 
-rule raw_nuts_units:
+rule administrative_borders_nuts:
     message: "Download NUTS units as GeoJSON."
     output:
         protected("data/automatic/raw-nuts{}-units.geojson".format(config["parameters"]["nuts-year"]))
@@ -93,9 +94,7 @@ rule administrative_borders:
     message: "Normalise all administrative borders."
     input:
         src = script_dir + "administrative_borders.py",
-        nuts_geojson = rules.raw_nuts_units.output[0],
-        gadm_gpkg = rules.all_gadm_administrative_borders.output[0],
-        lau_gpkg = rules.administrative_borders_lau.output[0]
+        **collect_shape_dirs(config, rules)
     params:
         crs = config["crs"],
         scope = config["scope"]

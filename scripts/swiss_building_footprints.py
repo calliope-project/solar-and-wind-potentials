@@ -6,7 +6,7 @@ import pandas as pd
 import geopandas as gpd
 
 from renewablepotentialslib.eligibility import Eligibility
-from renewablepotentialslib.conversion import area_in_squaremeters
+from renewablepotentialslib.geo.conversion import area_in_squaremeters
 
 
 def swiss_building_footprint(path_to_building_footprint, path_to_eligibility,

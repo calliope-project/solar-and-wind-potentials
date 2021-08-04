@@ -3,7 +3,7 @@ import pytest
 import shapely.geometry
 import pycountry
 
-from renewablepotentialslib.shape_utils import (
+from renewablepotentialslib.geo.shape_utils import (
     study_area,
     to_multi_polygon,
     drop_countries,

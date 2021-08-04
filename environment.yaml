@@ -6,3 +6,4 @@ dependencies:
   - python=3.6
   - snakemake-minimal=5.4
   - pycountry=20.7.3
+  - pip
