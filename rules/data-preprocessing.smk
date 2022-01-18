@@ -110,7 +110,7 @@ rule raw_land_cover_zipped:
     message: "Download land cover data as zip."
     output: protected("data/automatic/raw-globcover2009.zip")
     params: url = config["data-sources"]["land_cover"]
-    shell: "curl -sLo {output} '{url}'"
+    shell: "curl -sLo {output} '{params.url}'"
 
 
 rule raw_land_cover:
