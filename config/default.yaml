@@ -18,6 +18,7 @@ data-sources:
     sonnendach_total_size: https://zenodo.org/record/4091033/files/total-rooftop-area-km2.txt?download=1
     sonnendach_total_yield: https://zenodo.org/record/4091033/files/total-yield-twh.txt?download=1
     raw-capacity-factors: data/capacityfactors/{technology}.nc
+    slope: data/eudem_slop_3035_europe.tif
 root-directory: . # point to the root directory if working directory is not root directory
 crs: "EPSG:4326"
 scope:
@@ -239,6 +240,7 @@ parameters:
     max-slope:
         pv: 10 # [°] (AlGarni:2018)
         wind: 20 # [°] (McKenna:2014)
+    max-slope-pixel-fraction-threshold: 0.9
     max-depth-offshore: -50
     max-building-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2
     max-urban-green-share: 0.01 # Above, a pixel cannot be used for energy farms. Equals roughly 900m2. Removes e.g. Berlin's Tempelhofer Feld.

@@ -1,22 +1,11 @@
 """This is a Snakemake file defining rules to retrieve raw data from online sources."""
 import pycountry
 
-RESOLUTION_STUDY = (1 / 3600) * 10 # 10 arcseconds
-RESOLUTION_SLOPE = (1 / 3600) * 3 # 3 arcseconds
-
-SRTM_X_MIN = 34 # x coordinate of CGIAR tile raster
-SRTM_X_MAX = 44
-SRTM_Y_MIN = 1 # y coordinate of CGIAR tile raster
-SRTM_Y_MAX = 8
-GMTED_Y = ["50N", "70N"]
-GMTED_X = ["030W", "000E", "030E"]
-
 root_dir = config["root-directory"] + "/" if config["root-directory"] not in ["", "."] else ""
 script_dir = f"{root_dir}scripts/"
 
 localrules: raw_gadm_administrative_borders_zipped, raw_protected_areas_zipped,
-    raw_lau_units_zipped, raw_land_cover_zipped,
-    raw_land_cover, raw_protected_areas, raw_srtm_elevation_tile_zipped, raw_gmted_elevation_tile,
+    raw_lau_units_zipped, raw_land_cover_zipped, raw_land_cover, raw_protected_areas,
     raw_bathymetry_zipped, raw_bathymetry, raw_gadm_administrative_borders
 
 
@@ -138,70 +127,6 @@ rule raw_protected_areas:
     shell: "unzip -o {input} -d build/raw-wdpa-feb2019"
 
 
-rule raw_srtm_elevation_tile_zipped:
-    message: "Download SRTM elevation data tile (x={wildcards.x}, y={wildcards.y}) from CGIAR."
-    output: protected("data/automatic/raw-srtm/srtm_{x}_{y}.zip")
-    params: url = config["data-sources"]["cgiar_tile"]
-    shell: "curl -sLo {output} '{params.url}/srtm_{wildcards.x}_{wildcards.y}.zip'"
-
-
-rule raw_srtm_elevation_tile:
-    message: "Unzip SRTM elevation data tile (x={wildcards.x}, y={wildcards.y})."
-    input:
-        "data/automatic/raw-srtm/srtm_{x}_{y}.zip"
-    output:
-        temp("build/srtm_{x}_{y}.tif")
-    run: # using Python here, because "unzip" issues a warning sometimes causing snakemake to break
-        import zipfile
-        from pathlib import Path
-
-        file_to_extract = Path(input[0]).with_suffix(".tif").name
-        with zipfile.ZipFile(input[0], "r") as zipref:
-            zipref.extract(file_to_extract, path="build")
-
-
-rule raw_srtm_elevation_data:
-    message: "Merge all SRTM elevation data tiles."
-    input:
-        ["build/srtm_{x:02d}_{y:02d}.tif".format(x=x, y=y)
-         for x in range(SRTM_X_MIN, SRTM_X_MAX + 1)
-         for y in range(SRTM_Y_MIN, SRTM_Y_MAX + 1)
-         if not (x is 34 and y in [3, 4, 5, 6])] # these tiles do not exist
-    output:
-        temp("build/raw-srtm-elevation-data.tif")
-    conda: "../envs/default.yaml"
-    shell:
-        "rio merge {input} {output} --overwrite"
-
-
-rule raw_gmted_elevation_tile:
-    message: "Download GMTED elevation data tile."
-    output:
-        protected("data/automatic/raw-gmted/raw-gmted-{y}-{x}.tif")
-    run:
-        url = "{base_url}/{x_inverse}/{y}{x}_20101117_gmted_mea075.tif".format(**{
-            "base_url": config["data-sources"]["gmted_tile"],
-            "x": wildcards.x,
-            "y": wildcards.y,
-            "x_inverse": wildcards.x[-1] + wildcards.x[:-1]
-        })
-        shell("curl -sLo {output} '{url}'".format(**{"url": url, "output": output}))
-
-
-rule raw_gmted_elevation_data:
-    message: "Merge all GMTED elevation data tiles."
-    input:
-        ["data/automatic/raw-gmted/raw-gmted-{y}-{x}.tif".format(x=x, y=y)
-         for x in GMTED_X
-         for y in GMTED_Y
-         ]
-    output:
-        temp("build/raw-gmted-elevation-data.tif")
-    conda: "../envs/default.yaml"
-    shell:
-        "rio merge {input} {output} --overwrite"
-
-
 rule raw_bathymetry_zipped:
     message: "Download bathymetric data as zip."
     output: protected("data/automatic/raw-bathymetric.zip")
@@ -216,31 +141,6 @@ rule raw_bathymetry:
     shell: "unzip {input} -d ./build/"
 
 
-rule elevation_in_europe:
-    message: "Merge SRTM and GMTED elevation data and warp/clip to Europe using {threads} threads."
-    input:
-        gmted = rules.raw_gmted_elevation_data.output,
-        srtm = rules.raw_srtm_elevation_data.output
-    output:
-        temp("build/elevation-europe.tif")
-    params:
-        srtm_bounds = "{x_min},{y_min},{x_max},60".format(**config["scope"]["bounds"]),
-        gmted_bounds = "{x_min},59.5,{x_max},{y_max}".format(**config["scope"]["bounds"])
-    threads: config["snakemake"]["max-threads"]
-    conda: "../envs/default.yaml"
-    shell:
-        """
-        rio clip --bounds {params.srtm_bounds} {input.srtm} -o build/tmp-srtm.tif
-        rio clip --bounds {params.gmted_bounds} {input.gmted} -o build/tmp-gmted.tif
-        rio warp build/tmp-gmted.tif -o build/tmp-gmted2.tif -r {RESOLUTION_SLOPE} \
-        --resampling nearest --threads {threads}
-        rio merge build/tmp-srtm.tif build/tmp-gmted2.tif {output}
-        rm build/tmp-gmted.tif
-        rm build/tmp-gmted2.tif
-        rm build/tmp-srtm.tif
-        """
-
-
 rule land_cover_in_europe:
     message: "Clip land cover data to Europe."
     input: rules.raw_land_cover.output
@@ -250,21 +150,32 @@ rule land_cover_in_europe:
     shell: "rio clip {input} {output} --bounds {params.bounds}"
 
 
-rule slope_in_europe:
-    message: "Calculate slope and warp to resolution of study using {threads} threads."
+rule tech_slope_thresholds:
+    message: "Create binary raster for {wildcards.tech}, whose land use is limited by slope using {threads} threads"
     input:
-        elevation = rules.elevation_in_europe.output,
-        land_cover = rules.land_cover_in_europe.output
-    output:
-        "build/slope-europe.tif"
+        scripts = script_dir + "slopes.py",
+        slopes_in_europe = config["data-sources"]["slope"]
+    output: temp("build/data/eudem_slop_3035_europe_{tech}.tif")
+    threads: config["snakemake"]["max-threads"]
+    params:
+        max_slope = lambda wildcards: config["parameters"]["max-slope"][wildcards.tech],
+        max_threads = config["snakemake"]["max-threads"]
+    conda: "../envs/default.yaml"
+    script: "../scripts/slopes.py"
+
+
+rule slope_thresholds_warped_to_land_cover:
+    message: "Warp {wildcards.tech} land availability according to slope to resolution of study using {threads} threads."
+    input:
+        land_cover = rules.land_cover_in_europe.output,
+        slope_threshold = "build/data/eudem_slop_3035_europe_{tech}.tif"
+    output: "build/slope-europe-{tech}.tif"
     threads: config["snakemake"]["max-threads"]
     conda: "../envs/default.yaml"
     shell:
         """
-        gdaldem slope -s 111120 -compute_edges {input.elevation} build/slope-temp.tif
-        rio warp build/slope-temp.tif -o {output} --like {input.land_cover} \
-        --resampling max --threads {threads}
-        rm build/slope-temp.tif
+        rio warp {input.slope_threshold} -o {output} --like {input.land_cover} \
+        --resampling average --threads {threads}
         """
 
 

@@ -12,10 +12,12 @@ settlements:
 shared_coast:
     cores: 4
     runtime: 60
-slope_in_europe:
+tech_slope_thresholds:
     cores: 4
-elevation_in_europe:
+    runtime: 60
+slope_thresholds_warped_to_land_cover:
     cores: 4
+    runtime: 60
 eez_eligibility:
     cores: 4
 sensitivities:

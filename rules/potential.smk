@@ -15,15 +15,16 @@ rule category_of_technical_eligibility:
     input:
         src = script_dir + "technical_eligibility.py",
         land_cover = rules.land_cover_in_europe.output[0],
-        slope = rules.slope_in_europe.output[0],
+        slope_pv = "build/slope-europe-pv.tif",
+        slope_wind = "build/slope-europe-wind.tif",
         bathymetry = rules.bathymetry_in_europe.output[0],
         building_share = rules.settlements.output.buildings,
         urban_green_share = rules.settlements.output.urban_greens
     params:
-        max_slope = config["parameters"]["max-slope"],
         max_building_share = config["parameters"]["max-building-share"],
         max_urban_green_share = config["parameters"]["max-urban-green-share"],
-        max_depth_offshore = config["parameters"]["max-depth-offshore"]
+        max_depth_offshore = config["parameters"]["max-depth-offshore"],
+        slope_threshold = config["parameters"]["max-slope-pixel-fraction-threshold"]
     output:
         "build/technically-eligible-land.tif"
     conda: "../envs/default.yaml"
