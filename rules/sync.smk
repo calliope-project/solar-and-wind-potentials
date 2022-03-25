@@ -9,7 +9,7 @@ LOCAL_EULER_RESULTS = "./build/euler/"
 rule send:
     message: "Send changes to Euler"
     shell:
-        "rsync -avzh --progress --delete -r . --exclude-from=.syncignore {EULER_URL}:{EULER_BASE_DIR}"
+        "rsync -avzh --progress --delete --no-p --no-g --chmod=ugo=rwX -r . --exclude-from=.syncignore {EULER_URL}:{EULER_BASE_DIR}"
 
 
 rule receive:
